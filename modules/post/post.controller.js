@@ -28,10 +28,11 @@ const postsUpload = (req, res, next) => {
 
     var post_captions = req.body.post_captions;
     var post_description = req.body.post_description;
-    var tags = req.body.tags;
-    var post_id = req.body.post_id;
-    var is_update = req.body.is_update;
-    var schedule_id = req.body.schedule_id;
+    var is_update=req.body.is_update
+    var post_id=req.body.post_id
+
+ 
+
     var user_id = req.body.user_id;
     console.log(req.body);
     console.log(req.files);
@@ -47,10 +48,10 @@ const postsUpload = (req, res, next) => {
           res.send(response);
         } else {
           var sql =
-            "update post i set post_captions=?,post_description=?,tags=?,post=1 where i.id=?";
+            "update post i set post_captions=?,post_description=? where i.id=?";
           connection.query(
             sql,
-            [post_captions, post_description, tags, post_id],
+            [post_captions, post_description, post_id],
             function (err, result) {
               if (err) {
                 response = {
@@ -79,9 +80,9 @@ const postsUpload = (req, res, next) => {
       });
     } else {
       var sql =
-        "insert into post (post_captions,post_description,tags,post,schedule_id,user_id) values ?";
+        "insert into post (post_captions,post_description,user_id) values ?";
       var values = [
-        [post_captions, post_description, tags, 1, schedule_id, user_id],
+        [post_captions, post_description, user_id],
       ];
       connection.query(sql, [values], function (err, result) {
         if (err) {
