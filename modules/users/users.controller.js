@@ -1302,7 +1302,7 @@ const insert_family_profile = (req, res) => {
               result.insertId,
               result1[0].gender,
               req.body.user_id,
-              '0'
+              '1'
             ],
           ];
           connection.query(sql1, [VALUES], function (err, result2, cache) {
