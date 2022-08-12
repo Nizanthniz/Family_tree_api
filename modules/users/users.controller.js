@@ -1,5 +1,4 @@
 var connection = require("../../config/db");
-var storage_type = require('../../config/strorage')
 
 var md5 = require("md5");
 const moment = require("moment");
@@ -1057,6 +1056,7 @@ const user_login = (req, res) => {
             family_status: "1",
             user_id: result[0].id,
             family_id: result[0].family_id,
+            user_name:result[0].user_name
           });
         } else {
           res.send({
@@ -1245,13 +1245,14 @@ const insert_family_profile = (req, res) => {
           }
 
           var sql1 =
-            "insert into family_details  (name,gender,family_id,phone) values ?";
+            "insert into family_details  (name,gender,family_id,phone,user_id) values ?";
           var VALUES = [
             [
               result1[0].user_name,
               result1[0].gender,
               result.insertId,
               result1[0].gender,
+              req.body.user_id
             ],
           ];
           connection.query(sql1, [VALUES], function (err, result2, cache) {
@@ -1381,7 +1382,7 @@ const read_notifications = async (req, res) => {
 
 
 const getUserIdByNodeId = async (req, res) => {
-  var sql2 = "INSERT IGNORE  INTO temp_chat (own_id,user_id)  SELECT '?',user_id FROM family_details WHERE id='?' ON DUPLICATE KEY UPDATE  user_id=(SELECT user_id FROM family_details WHERE id='?')";
+  var sql2 = "INSERT IGNORE  INTO temp_chat (own_id,user_id)  SELECT ?,user_id FROM family_details WHERE id=? ON DUPLICATE KEY UPDATE  user_id=(SELECT user_id FROM family_details WHERE id=?)";
   connection.query(sql2, [req.body.user_id, req.body.node_id, req.body.node_id], function (err, result3, cache) {
     if (err) {
       res.send({
