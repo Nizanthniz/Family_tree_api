@@ -1,5 +1,4 @@
 var connection = require("../../config/db");
-var storage_type = require("../../config/strorage");
 
 var md5 = require("md5");
 const moment = require("moment");
