@@ -1,5 +1,5 @@
 var connection = require("../../config/db");
-var storage_type = require('../../config/strorage')
+var storage_type = require("../../config/strorage");
 
 var md5 = require("md5");
 const moment = require("moment");
@@ -91,8 +91,7 @@ async function invite_insert_member(
                   pids,
                   image_name,
                   "1",
-                  insert_id
-
+                  insert_id,
                 ],
               ];
               connection.query(
@@ -153,7 +152,7 @@ async function invite_insert_member(
                   pids,
                   image_name,
                   "1",
-                  insert_id
+                  insert_id,
                 ],
               ];
               connection.query(
@@ -198,7 +197,7 @@ async function invite_insert_member(
               node_id,
               image_name,
               "1",
-              insert_id
+              insert_id,
             ],
           ];
           connection.query(sql1, [VALUES], async function (err, result1sss) {
@@ -258,7 +257,7 @@ async function invite_insert_member(
               pids,
               image_name,
               "1",
-              insert_id
+              insert_id,
             ],
           ];
           connection.query(sql1, [VALUES], async function (err, result1sss) {
@@ -656,7 +655,7 @@ const insert_data = (req, res, next) => {
 function millisToMinutesAndSeconds(millis) {
   var minutes = Math.floor(millis / 60000);
   var seconds = ((millis % 60000) / 1000).toFixed(0);
-  return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+  return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
 }
 
 const get_data = (req, res, next) => {
@@ -687,12 +686,12 @@ const get_data = (req, res, next) => {
         }
         owner = true;
         sql1 =
-          "SELECT fd.*,fp.profile_name,fd.user_id,fp.family_owner FROM family_details  fd JOIN family_profile fp ON fp.id=fd.family_id WHERE fd.family_id=" +
+          "SELECT fd.*,fp.profile_name,fd.user_id,fp.family_owner,fd.parent FROM family_details  fd JOIN family_profile fp ON fp.id=fd.family_id WHERE fd.family_id=" +
           req.body.family_id +
           " and fd.is_invite in ('0','1')";
       } else {
         sql1 =
-          "SELECT fd.*,fp.profile_name,fd.user_id,fp.family_owner FROM family_details  fd JOIN family_profile fp ON fp.id=fd.family_id WHERE fd.family_id=" +
+          "SELECT fd.*,fp.profile_name,fd.user_id,fp.family_owner,fd.parent FROM family_details  fd JOIN family_profile fp ON fp.id=fd.family_id WHERE fd.family_id=" +
           req.body.family_id +
           " and fd.is_invite in ('0')";
       }
@@ -759,25 +758,52 @@ const get_data = (req, res, next) => {
                   } else {
                     pids = null;
                   }
-                  chat_flag = presult.user_id == null || presult.user_id==0  ? false : true;
-                  chat_flag = presult.user_id == req.body.user_id?false:true;
-                  response.push({
-                    pids: pids,
-                    mid: arr.includes(presult.mid) ? null : presult.mid,
-                    fid: arr.includes(presult.fid) ? null : presult.fid,
-                    name: presult.name,
-                    gender: gender,
-                    dob: presult.dob,
-                    phone: presult.phone,
-                    famliy_id: presult.family_id,
-                    id: presult.id,
-                    profile: presult.profile,
-                    family_owner: presult.family_owner,
-                    family_name: presult.profile_name,
-                    first_node: family_length > 1 ? false : true,
-                    user_id: presult.user_id,
-                    chat_flag:chat_flag
-                  });
+                  chat_flag =
+                    presult.user_id == null || presult.user_id == 0
+                      ? false
+                      : true;
+                  chat_flag =
+                    presult.user_id == req.body.user_id ? false : true;
+
+                    if(presult.parent=='1'){
+                      response.push({
+                        pids: pids,
+                        mid: arr.includes(presult.mid) ? null : presult.mid,
+                        fid: arr.includes(presult.fid) ? null : presult.fid,
+                        name: presult.name,
+                        gender: gender,
+                        dob: presult.dob,
+                        phone: presult.phone,
+                        famliy_id: presult.family_id,
+                        id: presult.id,
+                        profile: presult.profile,
+                        family_owner: presult.family_owner,
+                        family_name: presult.profile_name,
+                        first_node: family_length > 1 ? false : true,
+                        user_id: presult.user_id,
+                        chat_flag: chat_flag,
+                      });
+                    }else{
+                      response.push({
+                        pids: pids,
+                        mid: arr.includes(presult.mid) ? null : presult.mid,
+                        fid: arr.includes(presult.fid) ? null : presult.fid,
+                        name: presult.name,
+                        gender: gender,
+                        dob: presult.dob,
+                        phone: presult.phone,
+                        famliy_id: presult.family_id,
+                        id: presult.id,
+                        profile: presult.profile,
+                        family_owner: presult.family_owner,
+                        family_name: presult.profile_name,
+                        first_node: family_length > 1 ? false : true,
+                        user_id: presult.user_id,
+                        chat_flag: chat_flag,
+                        tags:["overrideMenu"]
+                      });
+                    }
+                
                   console.log(response.length);
                   result1sss.length == response.length &&
                     res.send({
@@ -787,7 +813,7 @@ const get_data = (req, res, next) => {
                       start_time: start,
                       end_time: new Date().getTime(),
                       execution_time_ms: new Date().getTime() - start,
-                      execution_time_s: (new Date().getTime() - start) / 1000
+                      execution_time_s: (new Date().getTime() - start) / 1000,
                     });
                 });
               } else {
@@ -810,8 +836,13 @@ const get_data = (req, res, next) => {
                   } else {
                     pids = null;
                   }
-                  chat_flag = presult.user_id == null ||  presult.user_id==0 ? false : true;
-                  chat_flag = presult.user_id == req.body.user_id?false:true;
+                  chat_flag =
+                    presult.user_id == null || presult.user_id == 0
+                      ? false
+                      : true;
+                  chat_flag =
+                    presult.user_id == req.body.user_id ? false : true;
+                    if(presult.parent=='1'){
                   response.push({
                     pids: pids,
                     mid: presult.mid,
@@ -827,8 +858,28 @@ const get_data = (req, res, next) => {
                     family_name: presult.profile_name,
                     first_node: family_length > 1 ? false : true,
                     user_id: presult.user_id,
-                    chat_flag:chat_flag
+                    chat_flag: chat_flag,                    
                   });
+                }else{
+                  response.push({
+                    pids: pids,
+                    mid: presult.mid,
+                    fid: presult.fid,
+                    name: presult.name,
+                    gender: gender,
+                    dob: presult.dob,
+                    phone: presult.phone,
+                    famliy_id: presult.family_id,
+                    id: presult.id,
+                    profile: presult.profile,
+                    family_owner: presult.family_owner,
+                    family_name: presult.profile_name,
+                    first_node: family_length > 1 ? false : true,
+                    user_id: presult.user_id,
+                    chat_flag: chat_flag,
+                    tags:["overrideMenu"]
+                  });
+                }
                   console.log(response.length);
                   result1sss.length == response.length &&
                     res.send({
@@ -838,7 +889,7 @@ const get_data = (req, res, next) => {
                       start_time: start,
                       end_time: new Date().getTime(),
                       execution_time_ms: new Date().getTime() - start,
-                      execution_time_s: (new Date().getTime() - start) / 1000
+                      execution_time_s: (new Date().getTime() - start) / 1000,
                     });
                 });
               }
@@ -899,11 +950,9 @@ const user_signup = async (req, res) => {
   var user_profile;
   if (gender == 1) {
     user_profile = process.env.profile_men_image;
-  }
-  else if (gender == 2) {
+  } else if (gender == 2) {
     user_profile = process.env.profile_women_image;
-  }
-  else if (gender == 3) {
+  } else if (gender == 3) {
     user_profile = process.env.profile_not_specified;
   }
 
@@ -959,7 +1008,7 @@ const user_signup = async (req, res) => {
               req.body.email_id,
               "0",
               fcm_token,
-              user_profile
+              user_profile,
             ],
           ];
           connection.query(
@@ -1245,13 +1294,15 @@ const insert_family_profile = (req, res) => {
           }
 
           var sql1 =
-            "insert into family_details  (name,gender,family_id,phone) values ?";
+            "insert into family_details  (name,gender,family_id,phone,user_id,parent) values ?";
           var VALUES = [
             [
               result1[0].user_name,
               result1[0].gender,
               result.insertId,
               result1[0].gender,
+              req.body.user_id,
+              '0'
             ],
           ];
           connection.query(sql1, [VALUES], function (err, result2, cache) {
@@ -1376,31 +1427,32 @@ const read_notifications = async (req, res) => {
   }
 };
 
-
-
-
-
 const getUserIdByNodeId = async (req, res) => {
-  var sql2 = "INSERT IGNORE  INTO temp_chat (own_id,user_id)  SELECT '?',user_id FROM family_details WHERE id='?' ON DUPLICATE KEY UPDATE  user_id=(SELECT user_id FROM family_details WHERE id='?')";
-  connection.query(sql2, [req.body.user_id, req.body.node_id, req.body.node_id], function (err, result3, cache) {
-    if (err) {
-      res.send({
-        message: "error",
-        status: 400,
-        data: [],
-      });
-    } else {
-      res.send({
-        status: 200,
-        message: result3,
-      });
+  var sql2 =
+    "INSERT IGNORE  INTO temp_chat (own_id,user_id)  SELECT '?',user_id FROM family_details WHERE id='?' ON DUPLICATE KEY UPDATE  user_id=(SELECT user_id FROM family_details WHERE id='?')";
+  connection.query(
+    sql2,
+    [req.body.user_id, req.body.node_id, req.body.node_id],
+    function (err, result3, cache) {
+      if (err) {
+        res.send({
+          message: "error",
+          status: 400,
+          data: [],
+        });
+      } else {
+        res.send({
+          status: 200,
+          message: result3,
+        });
+      }
     }
-  });
-}
-
+  );
+};
 
 const getChatUserDetailsById = async (req, res) => {
-  var sql2 = "SELECT i.user_id,u.user_name,u.fcm_token  FROM temp_chat i  join users u ON i.user_id=u.id WHERE i.own_id=? ";
+  var sql2 =
+    "SELECT i.user_id,u.user_name,u.fcm_token  FROM temp_chat i  join users u ON i.user_id=u.id WHERE i.own_id=? ";
   connection.query(sql2, [req.body.user_id], function (err, result3, cache) {
     if (err) {
       res.send({
@@ -1424,13 +1476,9 @@ const getChatUserDetailsById = async (req, res) => {
           });
         }
       });
-
-
     }
   });
-}
-
-
+};
 
 module.exports = {
   insert_data,
@@ -1447,5 +1495,5 @@ module.exports = {
   get_notifications,
   read_notifications,
   getUserIdByNodeId,
-  getChatUserDetailsById
+  getChatUserDetailsById,
 };
