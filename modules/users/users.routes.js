@@ -20,4 +20,6 @@ const auth=require("./../../config/auth")
  router.post('/insert_family_profile',userController.insert_family_profile)
  
  router.post('/invite_acceptance',userController.invite_acceptance)
+ router.post('/getchatuserdetailsbyid',userController.getChatUserDetailsById)
+ router.post('/getuseridbynodeid',userController.getUserIdByNodeId)
 module.exports = router;

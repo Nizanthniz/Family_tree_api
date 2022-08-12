@@ -1,4 +1,5 @@
 var connection = require("../../config/db");
+var storage_type = require('../../config/strorage')
 
 var md5 = require("md5");
 const moment = require("moment");
@@ -77,7 +78,7 @@ async function invite_insert_member(
 
               mid = result2[0].mid;
               var sql1 =
-                "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile,is_invite) values ?";
+                "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile,is_invite,user_id) values ?";
               var VALUES = [
                 [
                   mid,
@@ -90,6 +91,8 @@ async function invite_insert_member(
                   pids,
                   image_name,
                   "1",
+                  insert_id
+
                 ],
               ];
               connection.query(
@@ -137,7 +140,7 @@ async function invite_insert_member(
                 console.log(mid);
               }
               var sql1 =
-                "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile,is_invite) values ?";
+                "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile,is_invite,user_id) values ?";
               var VALUES = [
                 [
                   mid,
@@ -150,6 +153,7 @@ async function invite_insert_member(
                   pids,
                   image_name,
                   "1",
+                  insert_id
                 ],
               ];
               connection.query(
@@ -181,7 +185,7 @@ async function invite_insert_member(
 
         if (relatives == "spouse") {
           var sql1 =
-            "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile,is_invite) values ?";
+            "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile,is_invite,user_id) values ?";
           var VALUES = [
             [
               mid,
@@ -194,6 +198,7 @@ async function invite_insert_member(
               node_id,
               image_name,
               "1",
+              insert_id
             ],
           ];
           connection.query(sql1, [VALUES], async function (err, result1sss) {
@@ -240,7 +245,7 @@ async function invite_insert_member(
 
         if (relatives == "parent") {
           var sql1 =
-            "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile,is_invite) values ?";
+            "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile,is_invite,user_id) values ?";
           var VALUES = [
             [
               mid,
@@ -253,6 +258,7 @@ async function invite_insert_member(
               pids,
               image_name,
               "1",
+              insert_id
             ],
           ];
           connection.query(sql1, [VALUES], async function (err, result1sss) {
@@ -648,14 +654,14 @@ const insert_data = (req, res, next) => {
 };
 
 function millisToMinutesAndSeconds(millis) {
-    var minutes = Math.floor(millis / 60000);
-    var seconds = ((millis % 60000) / 1000).toFixed(0);
-    return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
-  }
-  
-const get_data = (req, res, next) => {
-    var start = new Date().getTime();
+  var minutes = Math.floor(millis / 60000);
+  var seconds = ((millis % 60000) / 1000).toFixed(0);
+  return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+}
 
+const get_data = (req, res, next) => {
+  var start = new Date().getTime();
+  var chat_flag = true;
   var response = [];
 
   var sql1 = "";
@@ -681,12 +687,12 @@ const get_data = (req, res, next) => {
         }
         owner = true;
         sql1 =
-          "SELECT fd.*,fp.profile_name,fp.family_owner FROM family_details  fd JOIN family_profile fp ON fp.id=fd.family_id WHERE fd.family_id=" +
+          "SELECT fd.*,fp.profile_name,fd.user_id,fp.family_owner FROM family_details  fd JOIN family_profile fp ON fp.id=fd.family_id WHERE fd.family_id=" +
           req.body.family_id +
           " and fd.is_invite in ('0','1')";
       } else {
         sql1 =
-          "SELECT fd.*,fp.profile_name,fp.family_owner FROM family_details  fd JOIN family_profile fp ON fp.id=fd.family_id WHERE fd.family_id=" +
+          "SELECT fd.*,fp.profile_name,fd.user_id,fp.family_owner FROM family_details  fd JOIN family_profile fp ON fp.id=fd.family_id WHERE fd.family_id=" +
           req.body.family_id +
           " and fd.is_invite in ('0')";
       }
@@ -753,7 +759,8 @@ const get_data = (req, res, next) => {
                   } else {
                     pids = null;
                   }
-
+                  chat_flag = presult.user_id == null || presult.user_id==0  ? false : true;
+                  chat_flag = presult.user_id == req.body.user_id?false:true;
                   response.push({
                     pids: pids,
                     mid: arr.includes(presult.mid) ? null : presult.mid,
@@ -768,17 +775,19 @@ const get_data = (req, res, next) => {
                     family_owner: presult.family_owner,
                     family_name: presult.profile_name,
                     first_node: family_length > 1 ? false : true,
+                    user_id: presult.user_id,
+                    chat_flag:chat_flag
                   });
                   console.log(response.length);
-                  result1sss.length == response.length && 
+                  result1sss.length == response.length &&
                     res.send({
                       status: 200,
                       message: "Success",
                       data: response,
-                      start_time:start,
-                      end_time : new Date().getTime(),
-                      execution_time_ms : new Date().getTime()-start ,
-                      execution_time_s: (new Date().getTime()-start)/1000
+                      start_time: start,
+                      end_time: new Date().getTime(),
+                      execution_time_ms: new Date().getTime() - start,
+                      execution_time_s: (new Date().getTime() - start) / 1000
                     });
                 });
               } else {
@@ -801,7 +810,8 @@ const get_data = (req, res, next) => {
                   } else {
                     pids = null;
                   }
-
+                  chat_flag = presult.user_id == null ||  presult.user_id==0 ? false : true;
+                  chat_flag = presult.user_id == req.body.user_id?false:true;
                   response.push({
                     pids: pids,
                     mid: presult.mid,
@@ -816,6 +826,8 @@ const get_data = (req, res, next) => {
                     family_owner: presult.family_owner,
                     family_name: presult.profile_name,
                     first_node: family_length > 1 ? false : true,
+                    user_id: presult.user_id,
+                    chat_flag:chat_flag
                   });
                   console.log(response.length);
                   result1sss.length == response.length &&
@@ -823,10 +835,10 @@ const get_data = (req, res, next) => {
                       status: 200,
                       message: "Success",
                       data: response,
-                      start_time:start,
-                      end_time : new Date().getTime(),
-                      execution_time_ms : new Date().getTime()-start ,
-                      execution_time_s: (new Date().getTime()-start)/1000
+                      start_time: start,
+                      end_time: new Date().getTime(),
+                      execution_time_ms: new Date().getTime() - start,
+                      execution_time_s: (new Date().getTime() - start) / 1000
                     });
                 });
               }
@@ -883,6 +895,18 @@ const user_signup = async (req, res) => {
     family_id = 0;
   }
 
+  var gender = req.body.gender;
+  var user_profile;
+  if (gender == 1) {
+    user_profile = process.env.profile_men_image;
+  }
+  else if (gender == 2) {
+    user_profile = process.env.profile_women_image;
+  }
+  else if (gender == 3) {
+    user_profile = process.env.profile_not_specified;
+  }
+
   var sql = "select * from users where phone=?";
   connection.query(sql, [req.body.phone], async function (err, result, cache) {
     if (err) {
@@ -924,7 +948,7 @@ const user_signup = async (req, res) => {
         } else {
           var password = md5(req.body.password);
           var sql1 =
-            "insert into users (user_name,password,gender,family_id,phone,email_id,status,fcm_token) values ? ";
+            "insert into users (user_name,password,gender,family_id,phone,email_id,status,fcm_token,user_profile) values ? ";
           var VALUES = [
             [
               user_name,
@@ -935,6 +959,7 @@ const user_signup = async (req, res) => {
               req.body.email_id,
               "0",
               fcm_token,
+              user_profile
             ],
           ];
           connection.query(
@@ -1351,6 +1376,62 @@ const read_notifications = async (req, res) => {
   }
 };
 
+
+
+
+
+const getUserIdByNodeId = async (req, res) => {
+  var sql2 = "INSERT IGNORE  INTO temp_chat (own_id,user_id)  SELECT '?',user_id FROM family_details WHERE id='?' ON DUPLICATE KEY UPDATE  user_id=(SELECT user_id FROM family_details WHERE id='?')";
+  connection.query(sql2, [req.body.user_id, req.body.node_id, req.body.node_id], function (err, result3, cache) {
+    if (err) {
+      res.send({
+        message: "error",
+        status: 400,
+        data: [],
+      });
+    } else {
+      res.send({
+        status: 200,
+        message: result3,
+      });
+    }
+  });
+}
+
+
+const getChatUserDetailsById = async (req, res) => {
+  var sql2 = "SELECT i.user_id,u.user_name,u.fcm_token  FROM temp_chat i  join users u ON i.user_id=u.id WHERE i.own_id=? ";
+  connection.query(sql2, [req.body.user_id], function (err, result3, cache) {
+    if (err) {
+      res.send({
+        message: "error",
+        status: 400,
+        data: [],
+      });
+    } else {
+      var sql2 = "delete from temp_chat where own_id =?";
+      connection.query(sql2, [req.body.user_id], function (err, result, cache) {
+        if (err) {
+          res.send({
+            message: "error",
+            status: 400,
+            data: [],
+          });
+        } else {
+          res.send({
+            status: 200,
+            message: result3,
+          });
+        }
+      });
+
+
+    }
+  });
+}
+
+
+
 module.exports = {
   insert_data,
   get_data,
@@ -1365,4 +1446,6 @@ module.exports = {
   invite_acceptance,
   get_notifications,
   read_notifications,
+  getUserIdByNodeId,
+  getChatUserDetailsById
 };

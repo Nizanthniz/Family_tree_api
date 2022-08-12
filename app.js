@@ -21,6 +21,8 @@ var api_prefix='/api/v1'
 const app = express();
 
 app.use(express.json()); 
+app.use(express.static('public')); 
+app.use('/public', express.static('public'));
 app.use(cookieparser());
 //app.use(fileUpload());
 app.use(fileUpload({

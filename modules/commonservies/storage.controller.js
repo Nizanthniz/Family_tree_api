@@ -9,15 +9,10 @@ const DateTime = require('node-datetime/src/datetime');
 
 
 function UploadPost(req, res) {
-  var path, fs_post_show_path;
+  var path= process.env.post_path;
   var response = [];
-  if (storage_type == "fs") {
-    path = process.env.fs_post_path;
-    fs_post_show_path = process.env.fs_post_show_path;
-  } else if (storage_type == "os") {
-    path = process.env.os_post_path;
-    fs_post_show_path = process.env.os_post_show_path;
-  }
+
+
   const now = new DateTime().format("Y_m_d_H_M_S");
   let now1 = now.toString().trim();
   var post_id = res;
@@ -30,11 +25,12 @@ function UploadPost(req, res) {
     return response;
   } else if (req.length == undefined) {
     let sampleFile = req;
-    if (!fs.existsSync(path + post_id)) {
-      fs.mkdirSync(path + post_id);
+    if (!fs.existsSync(path + "/" + post_id)) {
+      fs.mkdirSync(path + "/" + post_id);
     }
+    console.log(sampleFile.name.toString().trim().replaceAll(/\s/g, ''))
     sampleFile.mv(
-      path + post_id + "/" + now1.concat(sampleFile.name),
+      path + "/" + post_id + "/" + now1.concat(sampleFile.name.toString().trim().replaceAll(/\s/g, '')),
       function (err) {
         if (err) {
           response = {
@@ -47,11 +43,15 @@ function UploadPost(req, res) {
     );
     var sql = "INSERT INTO upload_post(post_id, post,delete_flag) VALUES ?";
     var VALUES = [
-      [post_id, path + post_id + "/" + now1.concat(sampleFile.name), 0],
+      [post_id, post_id + "/" + now1.concat(sampleFile.name.toString().trim().replaceAll(/\s/g, '')), 0],
     ];
-    connection.query(sql, [VALUES], function (err, result) {
+    connection.query(sql, [VALUES], function (err, result, cache) {
       if (err) throw err;
       console.log("1 record inserted");
+
+      if (cache.isCache == false) {
+        connection.flush();
+      }
     });
     response = {
       status: "200",
@@ -62,11 +62,11 @@ function UploadPost(req, res) {
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     let sampleFile = req;
     // Use the mv() method to place the file somewhere on your server
-    if (!fs.existsSync(path + post_id)) {
-      fs.mkdirSync(path + post_id);
+    if (!fs.existsSync(path + "/" + post_id)) {
+      fs.mkdirSync(path + "/" + post_id);
     }
     sampleFile.forEach((file) => {
-      file.mv(path + post_id + "/" + now1.concat(file.name), function (err) {
+      file.mv(path + "/" + post_id + "/" + now1.concat(file.name.toString().trim().replaceAll(/\s/g, '')), function (err) {
         if (err) {
           response = {
             status: "400",
@@ -79,7 +79,7 @@ function UploadPost(req, res) {
     sampleFile.forEach((file) => {
       var sql = "INSERT INTO upload_post(post_id, post,delete_flag) VALUES ?";
       var VALUES = [
-        [post_id, path + post_id + "/" + now1.concat(file.name), 0],
+        [post_id, post_id + "/" + now1.concat(file.name.toString().trim().replaceAll(/\s/g, '')), 0],
       ];
       connection.query(sql, [VALUES], function (err, result) {
         if (err) {
