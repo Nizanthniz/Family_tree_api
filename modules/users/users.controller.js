@@ -764,7 +764,7 @@ const get_data = (req, res, next) => {
                   chat_flag =
                     presult.user_id == req.body.user_id ? false : true;
 
-                    if(presult.parent=='1'){
+                  
                       response.push({
                         pids: pids,
                         mid: arr.includes(presult.mid) ? null : presult.mid,
@@ -781,27 +781,8 @@ const get_data = (req, res, next) => {
                         first_node: family_length > 1 ? false : true,
                         user_id: presult.user_id,
                         chat_flag: chat_flag,
-                      });
-                    }else{
-                      response.push({
-                        pids: pids,
-                        mid: arr.includes(presult.mid) ? null : presult.mid,
-                        fid: arr.includes(presult.fid) ? null : presult.fid,
-                        name: presult.name,
-                        gender: gender,
-                        dob: presult.dob,
-                        phone: presult.phone,
-                        famliy_id: presult.family_id,
-                        id: presult.id,
-                        profile: presult.profile,
-                        family_owner: presult.family_owner,
-                        family_name: presult.profile_name,
-                        first_node: family_length > 1 ? false : true,
-                        user_id: presult.user_id,
-                        chat_flag: chat_flag,
-                        tags:["overrideMenu"]
-                      });
-                    }
+                      });                   
+                      
                 
                   console.log(response.length);
                   result1sss.length == response.length &&
@@ -841,7 +822,7 @@ const get_data = (req, res, next) => {
                       : true;
                   chat_flag =
                     presult.user_id == req.body.user_id ? false : true;
-                    if(presult.parent=='1'){
+                    if(presult.user_id==req.body.user_id ||presult.user_id==null ){
                   response.push({
                     pids: pids,
                     mid: presult.mid,
