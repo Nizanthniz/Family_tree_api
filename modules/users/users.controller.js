@@ -1079,10 +1079,10 @@ const user_login = (req, res) => {
         }
 
         if (password == result[0].password) {
-          var sql1 = "update users set fcm_token where id=?";
+          var sql1 = "update users set fcm_token=? where id=?";
           connection.query(
             sql1,
-            [result[0].id],
+            [req.body.fcm_token,result[0].id],
             async function (err, result1, cache) {
               if(err){
                 res.send({
