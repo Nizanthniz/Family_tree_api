@@ -1079,6 +1079,19 @@ const user_login = (req, res) => {
         }
 
         if (password == result[0].password) {
+          var sql1 = "update users set fcm_token where id=?";
+          connection.query(
+            sql1,
+            [result[0].id],
+            async function (err, result1, cache) {
+              if(err){
+                res.send({
+                  status: "400",
+                  message: "error",
+                  data: [],
+                });
+              }else{
+
           res.send({
             status: 200,
             message: "User login successfully..!",
@@ -1087,6 +1100,8 @@ const user_login = (req, res) => {
             user_id: result[0].id,
             family_id: result[0].family_id,
           });
+        }
+        });
         } else {
           res.send({
             status: 400,
@@ -1409,7 +1424,7 @@ const read_notifications = async (req, res) => {
 
 const getUserIdByNodeId = async (req, res) => {
   var sql2 =
-    "INSERT IGNORE  INTO temp_chat (own_id,user_id)  SELECT '?',user_id FROM family_details WHERE id='?' ON DUPLICATE KEY UPDATE  user_id=(SELECT user_id FROM family_details WHERE id='?')";
+    "INSERT IGNORE  INTO temp_chat (own_id,user_id)  SELECT ?,user_id FROM family_details WHERE id=? ON DUPLICATE KEY UPDATE  user_id=(SELECT user_id FROM family_details WHERE id=?)";
   connection.query(
     sql2,
     [req.body.user_id, req.body.node_id, req.body.node_id],

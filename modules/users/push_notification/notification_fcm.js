@@ -67,7 +67,7 @@ async function sendInviteAcceptSignupMembernotification(notification_id) {
 
       
         const message = {
-        to: 'dKqsWZUyS-SUALPhG7oTMF:APA91bGBdX6l6LiISx-SC7X1YXNXawwnYFPAq1XGSvD1oAzkV8VXz4UZgdqkVGh-PhslOAec-lBm9BZZ_T7sqfeRgWA0x5Vb0BfdGF_lUDo0yvyu4vvsNqtsxj3vX3incyHcY4br0S4G',
+        to: result[0].fcm_token,
         notification: {
             title: 'Family Tree',
             body: result[0].user_name + " accepted your request to join our family name " + result[0].profile_name
