@@ -1085,6 +1085,7 @@ const user_login = (req, res) => {
             [req.body.fcm_token,result[0].id],
             async function (err, result1, cache) {
               if(err){
+                
                 res.send({
                   status: "400",
                   message: "error",
