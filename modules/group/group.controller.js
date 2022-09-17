@@ -191,7 +191,7 @@ const addmemberingroup = (req, res, next) => {
 const getallmembersbygroupid = (req, res, next) => {
 
 
-     var sql="SELECT u.id AS user_id,u.fcm_token,u.user_name,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,if(u.id=( SELECT l.owner_id FROM `group` l WHERE l.id=?),1,0 ) as owner_status   FROM users u   left JOIN `group` g ON g.owner_id =u.id LEFT JOIN group_members gp ON gp.group_id=g.id  where u.id IN (SELECT g.owner_id FROM `group` g WHERE g.id=?) OR u.id IN( SELECT gp.user_id FROM group_members gp WHERE gp.group_id=? AND gp.`status`='0') group BY u.id ";
+     var sql="SELECT u.id AS user_id,u.fcm_token,u.user_name,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,if(u.id=( SELECT l.owner_id FROM `group` l WHERE l.id=?),1,0 ) as owner_status,if((SELECT COUNT(*) FROM `group_members` la WHERE la.group_id=?)>1,1,0) AS members   FROM users u   left JOIN `group` g ON g.owner_id =u.id LEFT JOIN group_members gp ON gp.group_id=g.id  where u.id IN (SELECT g.owner_id FROM `group` g WHERE g.id=?) OR u.id IN( SELECT gp.user_id FROM group_members gp WHERE gp.group_id=? AND gp.`status`='0') group BY u.id ";
 
     // var sql = "SELECT u.id AS user_id,u.user_name,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,gp.is_owner as owner_status   FROM users u   left JOIN `group` g ON g.owner_id =u.id LEFT JOIN group_members gp ON gp.group_id=g.id  where u.id IN (SELECT g.owner_id FROM `group` g WHERE g.id=?) OR u.id IN( SELECT gp.user_id FROM group_members gp WHERE gp.group_id=? AND gp.`status`='0')  Group BY u.id";
 
