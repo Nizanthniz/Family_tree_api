@@ -8,5 +8,6 @@ router.post('/likepost', postController.likepost);
 router.post('/deletepost', postController.deletepostbyid);
 router.post('/commentpost', postController.CommentPost);
 router.post('/test', postController.Test);
-
+router.post('/getallpostcommentpostid', postController.getAllPostCommentpostid);
+router.post('/getallfamilybyuserid', postController.getAllFamilyByUserId);
 module.exports = router;

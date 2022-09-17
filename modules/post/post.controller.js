@@ -1,8 +1,7 @@
 var storage = require("../commonservies/storage.controller");
-var storage_type = require('../../config/strorage')
 var connection = require("../../config/db");
 const moment = require('moment');
-const postsUpload = (req, res, next) => {
+const postsUpload = async (req, res, next) => {
   console.log(req.body);
 
   //console.log((req.files.sampleFile).length);
@@ -14,7 +13,11 @@ const postsUpload = (req, res, next) => {
   var is_update = req.body.is_update;
   // var schedule_id = req.body.schedule_id;
   var user_id = req.body.user_id;
-  console.log(req.body);
+  var is_public = req.body.is_public;
+  var family_id=[];;
+
+  is_public == 1 ? await getAllFamilyByUserIds(user_id).then((data) => { family_id = data.map((d) => { return d.family_id }) }) : family_id.push(req.body.family_ids);
+  console.log("-------->", family_id);
   console.log(req.files);
   if (is_update == "true") {
     var sql = "update upload_post set delete_flag=1 where post_id=?";
@@ -32,7 +35,7 @@ const postsUpload = (req, res, next) => {
         connection.query(
           sql,
           [post_captions, post_description, post_id],
-          function (err, result) {
+          async function (err, result) {
             if (err) {
               response = {
                 status: "400",
@@ -44,18 +47,26 @@ const postsUpload = (req, res, next) => {
               if (cache.isCache == false) {
                 connection.flush();
               }
-              if (
-                req.files.sampleFile != null ||
-                req.files.sampleFile != undefined
-              ) {
-                const resp = storage.UploadPost(
-                  req.files.sampleFile,
-                  post_id
-                );
-                res.send(resp);
-              } else {
-                res.send(req.body);
+
+
+              addShowPostDetails(family_id, post_id, true).then((data) => {
+
+                if (
+                  req.files.sampleFile != null ||
+                  req.files.sampleFile != undefined
+                ) {
+                  const resp = storage.UploadPost(
+                    req.files.sampleFile,
+                    post_id
+                  );
+                  res.send(resp);
+                } else {
+                  res.send(req.body);
+                }
+
               }
+              );
+
             }
           }
         );
@@ -67,7 +78,7 @@ const postsUpload = (req, res, next) => {
     var values = [
       [post_captions, post_description, user_id],
     ];
-    connection.query(sql, [values], function (err, result, cache) {
+    connection.query(sql, [values], async function (err, result, cache) {
       if (err) {
         response = {
           status: "400",
@@ -76,6 +87,9 @@ const postsUpload = (req, res, next) => {
         };
         res.send(response);
       } else {
+          addShowPostDetails(family_id, result.insertId, false).then((data) => {
+
+            console.log(".............",data)
         if (cache.isCache == false) {
           connection.flush();
         }
@@ -91,30 +105,34 @@ const postsUpload = (req, res, next) => {
         } else {
           res.send(req.body);
         }
+      });
+
+
       }
     });
   }
 
 };
 
-const getlast_comment_for_deletecomment = (user_id, post_id) => {
-  return new Promise(function (resolve, reject) {
+async function getlast_comment_for_deletecomment(user_id, post_id, res) {
+  return new Promise(async function (resolve, reject) {
+
     var sql1 = "SELECT pc.comments AS comment ,pc.id AS comment_id,DATE_FORMAT(pc.created_at,'%Y-%m-%d ') as date,pc.created_at AS time,u.user_name,u.id  AS user_id ,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image ,case when pc.user_id=? then 'true' ELSE 'false' END AS own_comment  FROM post_comment pc JOIN users u ON u.id=pc.user_id  WHERE pc.post_id=? and u.delete_flag='0' and u.is_admin='0' and pc.delete_flag='0' order by pc.id desc limit 1";
-    connection.query(sql1, [process.env.profile_image_show_path, user_id, post_id], async function (err, ret, cache) {
-      if (err) {
-        reject(err)
+
+    connection.query(sql1, [process.env.profile_image_show_path, user_id, post_id], function (err, ret, cache) {
+
+      if (ret.length > 0) {
+        console.log(ret)
+        resolve(ret)
       }
       else {
-
         if (cache.isCache == false) {
           connection.flush();
         }
-
-        resolve(ret);
-
-
+        resolve([])
       }
-    })
+    });
+
 
   });
 };
@@ -174,8 +192,8 @@ const getAllPostuserid = (req, res, next) => {
     user_profile_path = process.env.profile_image_show_path;
     post_path = process.env.post_show_path
 
-    var sql = "SELECT p.id AS post_id,p.user_id,p.created_at,p.likes,p.comments,p.post_captions,p.post_description,GROUP_CONCAT(CONCAT(?, CASE WHEN up.post != '' THEN  CONCAT(up.post) END))  AS post,u.user_name, CONCAT(?, CASE WHEN u.user_profile != '' THEN  CONCAT(u.user_profile) end) as user_profile  from post p JOIN upload_post up ON p.id=up.post_id JOIN users u ON p.user_id=u.id WHERE p.user_id IN( SELECT id FROM users WHERE family_id IN( SELECT i.family_id FROM users i WHERE i.id=?) ) AND p.delete_flag=0 AND up.delete_flag=0 GROUP BY p.id ORDER BY p.created_at desc";
-    connection.query(sql, [post_path, user_profile_path, user_id], function (err, result, cache) {
+    var sql = "SELECT p.id AS post_id,p.user_id,p.created_at,p.likes,p.comments,p.post_captions,p.post_description,GROUP_CONCAT(CONCAT(?, CASE WHEN up.post != '' THEN  CONCAT(up.post) END))  AS post,u.user_name, CONCAT(?, CASE WHEN u.user_profile != '' THEN  CONCAT(u.user_profile) end) as user_profile  from post p JOIN upload_post up ON p.id=up.post_id JOIN users u ON p.user_id=u.id WHERE p.id IN(SELECT uf.post_id FROM show_post uf WHERE uf.family_id IN(  SELECT i.family_id FROM users_family_details i WHERE i.user_id=?) AND uf.is_delete='0' group BY uf.post_id)  AND p.delete_flag=0 AND up.delete_flag=0 GROUP BY p.id ORDER BY p.created_at desc";
+    connection.query(sql, [post_path, user_profile_path, user_id], async function (err, result, cache) {
       if (err) {
         response = {
           status: "400",
@@ -188,14 +206,16 @@ const getAllPostuserid = (req, res, next) => {
           connection.flush();
         }
 
-        var j, last_comment = {};
+        var j, i = 0, last_comment1 = [];
 
         var response = [];
         if (result.length > 0) {
 
-          result.forEach((vals) => {
-            j = vals.post.split(",")
-            // getlast_comment_for_deletecomment(vals.user_id, vals.post_id).then((last_comment) => {
+        await  result.forEach(async (vals) => {
+           
+console.log(j);
+           await getlast_comment_for_deletecomment(vals.user_id, vals.post_id).then((last_comment) => {
+            j = vals.post.split(",");
               response.push({
                 "post_id": vals.post_id,
                 "user_id": vals.user_id,
@@ -207,19 +227,23 @@ const getAllPostuserid = (req, res, next) => {
                 "post": j,
                 "user_name": vals.user_name,
                 "user_profile": vals.user_profile,
-              //   "last_comment": last_comment
-              // })
-          
+                "last_comment": last_comment
+              })
+              result.length == response.length && response.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) && res.send({
+                status: "200",
+                message: "Data Found",
+                response: response
+              });
             }
             )
           })
-          result.length == response.length && response.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) && res.send({
-            status: "200",
-            message: "Data Found",
-            response: response
-          });
 
-          // res.send(result)
+
+
+
+
+
+
         }
         else {
           response = {
@@ -295,7 +319,7 @@ const Test = (req, res, next) => {
             }
             )
           })
-          
+
 
           // res.send(result)
         }
@@ -330,8 +354,8 @@ const CommentPost = async (req, res, next) => {
   if (comment_id == undefined || comment_id == '') {
 
 
-    var sql = "insert  into post_comment (post_id,user_id,comments,created_at,date_at,time_at) values ?";
-    var VALUES = [[post_id, user_id, comment, create_at, date_at, time_at],];
+    var sql = "insert  into post_comment (post_id,user_id,comments,created_at,date_at,time_at,delete_flag) values ?";
+    var VALUES = [[post_id, user_id, comment, create_at, date_at, time_at, 0],];
     connection.query(sql, [VALUES], async function (err, results) {
       if (err) {
         response = {
@@ -671,6 +695,120 @@ const likepost = async (req, res, next) => {
   }
 };
 
+const getAllPostCommentpostid = (req, res, next) => {
+
+
+  var sql = "SELECT p.comments AS post_comment_count, i.id as comment_id,i.post_id,i.user_id,i.comments,i.reply_id,i.comment_count, DATE_FORMAT(i.created_at,'%Y-%m-%d') AS create_at,i.created_at AS time_at FROM post_comment i JOIN post p ON p.id=i.post_id INNER JOIN users u ON u.id=i.user_id WHERE i.post_id=? AND u.is_admin='0' and u.delete_flag='0' AND i.reply_id IS NULL ORDER BY i.created_at desc";
+  var response = [];
+  // var user_id = req.body.user_id;
+
+  connection.query(sql, [req.body.post_id], function (err, result, cache) {
+    if (err) {
+      response = {
+        status: '500',
+        message: 'No Data Found',
+        response: err,
+      }
+      res.status(500).send(response);
+    }
+    else {
+
+      res.status(200).send({ "status": 200, "message": "Success", "data": result });
+
+
+    }
+  });
+
+};
+
+async function getAllFamilyByUserIds(user_id) {
+  return new Promise(async function (resolve, reject) {
+    var sql1 = "SELECT  i.id as family_id,i.profile_name FROM family_profile AS i WHERE i.id IN( SELECT j.family_id FROM family_details AS j WHERE j.user_id=?) group BY i.id"
+
+    connection.query(sql1, [user_id], function (err, ret, cache) {
+
+      if (ret.length > 0) {
+        if (cache.isCache == false) {
+          connection.flush();
+        }
+        console.log(ret)
+        resolve(ret)
+      }
+      else {
+        if (cache.isCache == false) {
+          connection.flush();
+        }
+        resolve([])
+      }
+    });
+  });
+};
+
+async function addShowPostDetails(family_ids, post_id, is_update) {
+  var i = 0;
+  if (is_update == true) {
+    return new Promise(async function (resolve, reject) {
+      var sql = "UPDATE show_post SET is_delete='1' WHERE post_id=?";
+
+      connection.query(sql, [post_id], async function (err, results) {
+        if (err) {
+          response = {
+            status: '400',
+            response: err
+          }
+          resolve(response);
+        }
+        else {
+
+         await family_ids.forEach((vals) => {
+            var sql = "INSERT INTO show_post(post_id,family_id) values ?";
+            var VALUES = [[post_id, vals],];
+            connection.query(sql, [VALUES], async function (err, result) {
+              i++;
+            });
+
+           resolve(true)
+
+          })
+        }
+      })
+    })
+  }
+  else {
+    return new Promise(async function (resolve, reject) {
+     await family_ids.forEach((vals) => {
+        var sql = "INSERT INTO show_post(post_id,family_id) values ?";
+        var VALUES = [[post_id, vals],];
+        connection.query(sql, [VALUES], async function (err, result) {
+         
+        });
+
+
+      })
+     
+       resolve(true)
+    });
+    
+  }
+};
+
+
+
+
+const getAllFamilyByUserId = (req, res, next) => {
+  var user_id = req.body.user_id;
+
+  getAllFamilyByUserIds(user_id).then((members) => {
+    members   =  members.map((r) => {r.isChecked=false;return r})
+
+    res.send({
+      status: "200",
+      message: "Data Found",
+      response: members
+    });
+  }
+  )
+}
 
 
 
@@ -680,5 +818,8 @@ module.exports = {
   getAllPostuserid,
   likepost,
   deletepostbyid,
-  CommentPost, Test
+  CommentPost, Test,
+  getAllPostCommentpostid,
+  getAllFamilyByUserId
+
 };

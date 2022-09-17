@@ -1,5 +1,3 @@
-
-var storage_type = require('../../config/strorage')
 require('dotenv').config();
 var connection = require("../../config/db");
 var fs = require('fs');
@@ -28,9 +26,9 @@ function UploadPost(req, res) {
     if (!fs.existsSync(path + "/" + post_id)) {
       fs.mkdirSync(path + "/" + post_id);
     }
-    console.log(sampleFile.name.toString().trim().replaceAll(/\s/g, ''))
+    console.log(sampleFile)
     sampleFile.mv(
-      path + "/" + post_id + "/" + now1.concat(sampleFile.name.toString().trim().replaceAll(/\s/g, '')),
+      path + "/" + post_id + "/" + now1.concat(sampleFile.name),
       function (err) {
         if (err) {
           response = {
@@ -43,7 +41,7 @@ function UploadPost(req, res) {
     );
     var sql = "INSERT INTO upload_post(post_id, post,delete_flag) VALUES ?";
     var VALUES = [
-      [post_id, post_id + "/" + now1.concat(sampleFile.name.toString().trim().replaceAll(/\s/g, '')), 0],
+      [post_id, post_id + "/" + now1.concat(sampleFile.name), 0],
     ];
     connection.query(sql, [VALUES], function (err, result, cache) {
       if (err) throw err;
@@ -66,7 +64,7 @@ function UploadPost(req, res) {
       fs.mkdirSync(path + "/" + post_id);
     }
     sampleFile.forEach((file) => {
-      file.mv(path + "/" + post_id + "/" + now1.concat(file.name.toString().trim().replaceAll(/\s/g, '')), function (err) {
+      file.mv(path + "/" + post_id + "/" + now1.concat(file.name), function (err) {
         if (err) {
           response = {
             status: "400",
@@ -79,7 +77,7 @@ function UploadPost(req, res) {
     sampleFile.forEach((file) => {
       var sql = "INSERT INTO upload_post(post_id, post,delete_flag) VALUES ?";
       var VALUES = [
-        [post_id, post_id + "/" + now1.concat(file.name.toString().trim().replaceAll(/\s/g, '')), 0],
+        [post_id, post_id + "/" + now1.concat(file.name), 0],
       ];
       connection.query(sql, [VALUES], function (err, result) {
         if (err) {
@@ -92,7 +90,7 @@ function UploadPost(req, res) {
       });
     });
     response = {
-      status: "200",
+      status:    "200",
       response: "Post uploaded!",
     };
     return response;

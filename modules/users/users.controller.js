@@ -1,5 +1,5 @@
 var connection = require("../../config/db");
-
+var countryTelData = require('country-telephone-data')
 var md5 = require("md5");
 const moment = require("moment");
 
@@ -525,77 +525,130 @@ const insert_data = (req, res, next) => {
   }
 
   if (req.body.relatives == "parent") {
-    var sql1 =
-      "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile) values ?";
-    var VALUES = [
-      [
-        mid,
-        fid,
-        name,
-        gender,
-        phone,
-        dob,
-        req.body.family_id,
-        pids,
-        image_name,
-      ],
-    ];
-    connection.query(sql1, [VALUES], function (err, result1sss) {
-      if (err) {
-        console.log("err", err);
-        res.send({
-          message: "err",
-          status: 400,
-          data: [],
-        });
-      } else {
-        if (gender == 1) {
-          var sql2 = "update family_details set fid=? where id=?";
 
-          connection.query(
-            sql2,
-            [result1sss.insertId, req.body.nodeId],
-            function (err, result3) {
-              if (err) {
-                res.send({
-                  message: "err",
-                  status: 400,
-                  data: [],
-                });
-              } else {
-                res.send({
-                  message: "success",
-                  status: 200,
-                  data: [],
-                });
-              }
-            }
-          );
-        } else if (gender == 2) {
-          var sql2 = "update family_details set mid=? where id=?";
+    var sql1 = gender == 1 ? "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile) SELECT ?, ?, ?,?,?,?, ?, i.`mid`,? FROM family_details i WHERE id=?" :
+      "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile) SELECT ?, ?, ?,?,?,?, ?, i.fid,? FROM family_details i WHERE id=?"
 
-          connection.query(
-            sql2,
-            [result1sss.insertId, req.body.nodeId],
-            function (err, result3) {
-              if (err) {
-                res.send({
-                  message: "err",
-                  status: 400,
-                  data: [],
-                });
-              } else {
-                res.send({
-                  message: "success",
-                  status: 200,
-                  data: [],
-                });
+
+    // var VALUES = [
+    //   [
+    //     mid,
+    //     fid,
+    //     name,
+    //     gender,
+    //     phone,
+    //     dob,
+    //     req.body.family_id,
+    //     pids,
+    //     image_name,
+    //   ],
+    // ];
+    connection.query(sql1, [mid,
+      fid,
+      name,
+      gender,
+      phone,
+      dob,
+      req.body.family_id,
+      image_name, req.body.nodeId], function (err, result1sss) {
+        if (err) {
+          console.log("err", err);
+          res.send({
+            message: "err",
+            status: 400,
+            data: [],
+          });
+        } else {
+          if (gender == 1) {
+
+
+
+            var sql2 = "update family_details set fid=? where id=?";
+
+            connection.query(
+              sql2,
+              [result1sss.insertId, req.body.nodeId],
+              function (err, result3) {
+                if (err) {
+                  res.send({
+                    message: "err",
+                    status: 400,
+                    data: [],
+                  });
+                } else {
+
+
+                  var sql3 = "UPDATE family_details AS i JOIN(SELECT mid,fid FROM family_details WHERE id=?) AS j SET i.pids=j.fid WHERE i.id =j.mid";
+
+                  connection.query(
+                    sql3,
+                    [req.body.nodeId],
+                    function (err, result3) {
+                      if (err) {
+                        res.send({
+                          message: "err",
+                          status: 400,
+                          data: [],
+                        });
+                      } else {
+                        res.send({
+                          message: "success",
+                          status: 200,
+                          data: [],
+                        });
+                      }
+                    }
+                  );
+                }
               }
-            }
-          );
+            );
+          } else if (gender == 2) {
+            var sql2 = "update family_details set mid=? where id=?";
+
+            connection.query(
+              sql2,
+              [result1sss.insertId, req.body.nodeId],
+              function (err, result3) {
+                if (err) {
+                  res.send({
+                    message: "err",
+                    status: 400,
+                    data: [],
+                  });
+                } else {
+                  var sql3 = "UPDATE family_details AS i JOIN(SELECT mid,fid FROM family_details WHERE id=?) AS j SET i.pids=j.mid WHERE i.id =j.fid";
+
+                  connection.query(
+                    sql3,
+                    [req.body.nodeId],
+                    function (err, result3) {
+                      if (err) {
+                        res.send({
+                          message: "err",
+                          status: 400,
+                          data: [],
+                        });
+                      } else {
+                        res.send({
+                          message: "success",
+                          status: 200,
+                          data: [],
+                        });
+                      }
+                    }
+                  );
+                }
+              }
+            );
+          }
         }
-      }
-    });
+
+
+
+
+
+
+      });
   }
 
   if (req.body.relatives == "siblings") {
@@ -761,29 +814,29 @@ const get_data = (req, res, next) => {
                     presult.user_id == null || presult.user_id == 0
                       ? false
                       : true;
-                  chat_flag =
-                    presult.user_id == req.body.user_id ? false : true;
+                  // chat_flag =
+                  //   presult.user_id == req.body.user_id ? false : true;
 
-                  
-                      response.push({
-                        pids: pids,
-                        mid: arr.includes(presult.mid) ? null : presult.mid,
-                        fid: arr.includes(presult.fid) ? null : presult.fid,
-                        name: presult.name,
-                        gender: gender,
-                        dob: presult.dob,
-                        phone: presult.phone,
-                        famliy_id: presult.family_id,
-                        id: presult.id,
-                        profile: presult.profile,
-                        family_owner: presult.family_owner,
-                        family_name: presult.profile_name,
-                        first_node: family_length > 1 ? false : true,
-                        user_id: presult.user_id,
-                        chat_flag: chat_flag,
-                      });                   
-                      
-                
+
+                  response.push({
+                    pids: pids,
+                    mid: arr.includes(presult.mid) ? null : presult.mid,
+                    fid: arr.includes(presult.fid) ? null : presult.fid,
+                    name: presult.name,
+                    gender: gender,
+                    dob: presult.dob,
+                    phone: presult.phone,
+                    famliy_id: presult.family_id,
+                    id: presult.id,
+                    profile: presult.profile,
+                    family_owner: presult.family_owner,
+                    family_name: presult.profile_name,
+                    first_node: family_length > 1 ? false : true,
+                    user_id: presult.user_id,
+                    chat_flag: chat_flag,
+                  });
+
+
                   console.log(response.length);
                   result1sss.length == response.length &&
                     res.send({
@@ -822,44 +875,44 @@ const get_data = (req, res, next) => {
                       : true;
                   chat_flag =
                     presult.user_id == req.body.user_id ? false : true;
-                    if(presult.user_id==req.body.user_id ||presult.user_id==null ){
-                  response.push({
-                    pids: pids,
-                    mid: presult.mid,
-                    fid: presult.fid,
-                    name: presult.name,
-                    gender: gender,
-                    dob: presult.dob,
-                    phone: presult.phone,
-                    famliy_id: presult.family_id,
-                    id: presult.id,
-                    profile: presult.profile,
-                    family_owner: presult.family_owner,
-                    family_name: presult.profile_name,
-                    first_node: family_length > 1 ? false : true,
-                    user_id: presult.user_id,
-                    chat_flag: chat_flag,                    
-                  });
-                }else{
-                  response.push({
-                    pids: pids,
-                    mid: presult.mid,
-                    fid: presult.fid,
-                    name: presult.name,
-                    gender: gender,
-                    dob: presult.dob,
-                    phone: presult.phone,
-                    famliy_id: presult.family_id,
-                    id: presult.id,
-                    profile: presult.profile,
-                    family_owner: presult.family_owner,
-                    family_name: presult.profile_name,
-                    first_node: family_length > 1 ? false : true,
-                    user_id: presult.user_id,
-                    chat_flag: chat_flag,
-                    tags:["overrideMenu"]
-                  });
-                }
+                  if (presult.user_id == req.body.user_id || presult.user_id == null) {
+                    response.push({
+                      pids: pids,
+                      mid: presult.mid,
+                      fid: presult.fid,
+                      name: presult.name,
+                      gender: gender,
+                      dob: presult.dob,
+                      phone: presult.phone,
+                      famliy_id: presult.family_id,
+                      id: presult.id,
+                      profile: presult.profile,
+                      family_owner: presult.family_owner,
+                      family_name: presult.profile_name,
+                      first_node: family_length > 1 ? false : true,
+                      user_id: presult.user_id,
+                      chat_flag: chat_flag,
+                    });
+                  } else {
+                    response.push({
+                      pids: pids,
+                      mid: presult.mid,
+                      fid: presult.fid,
+                      name: presult.name,
+                      gender: gender,
+                      dob: presult.dob,
+                      phone: presult.phone,
+                      famliy_id: presult.family_id,
+                      id: presult.id,
+                      profile: presult.profile,
+                      family_owner: presult.family_owner,
+                      family_name: presult.profile_name,
+                      first_node: family_length > 1 ? false : true,
+                      user_id: presult.user_id,
+                      chat_flag: chat_flag,
+                      tags: ["overrideMenu"]
+                    });
+                  }
                   console.log(response.length);
                   result1sss.length == response.length &&
                     res.send({
@@ -936,144 +989,208 @@ const user_signup = async (req, res) => {
     user_profile = process.env.profile_not_specified;
   }
 
-  var sql = "select * from users where phone=?";
-  connection.query(sql, [req.body.phone], async function (err, result, cache) {
+  var country_code = "91";
+  var country = "India";
+  // var country_test;
+  // countryTelData.allCountries.forEach((vals) => {
+  //   if (country_code == vals.dialCode) {
+  //     country_test = vals.name;
+  //   }
+  // });
+  // for (var i = 0; i < country_test.length;) {
+  //   if (country_test[i] != '(') {
+  //     country = country + country_test[i];
+  //     i++;
+  //   }
+  //   else {
+  //     break;
+  //   }
+  // }
+
+  // var sql = "select * from users where phone=?";
+  // connection.query(sql, [req.body.phone], async function (err, result, cache) {
+  //   if (err) {
+  //     res.send({
+  //       status: 400,
+  //       message: "error1",
+  //       data: [],
+  //     });
+  //   }
+  //   if (cache.isCache == false) {
+  //     connection.flush();
+  //   }
+  //   console.log(result.length);
+
+  //   if (result.length > 0) {
+  //     res.send({
+  //       status: 400,
+  //       message: "User is already registered..!",
+  //       data: [],
+  //     });
+  //   } else if (result.length == 0) {
+  var sql = "select * from users where user_name=?";
+  connection.query(sql, [user_name], async function (err, results, cache) {
     if (err) {
       res.send({
         status: 400,
-        message: "error1",
+        message: "error2",
         data: [],
       });
-    }
-    if (cache.isCache == false) {
-      connection.flush();
-    }
-    console.log(result.length);
-
-    if (result.length > 0) {
+    } else if (results.length > 0) {
+      if (cache.isCache == false) {
+        connection.flush();
+      }
       res.send({
         status: 400,
-        message: "User is already registered..!",
+        message: "Username is already exist.!",
         data: [],
       });
-    } else if (result.length == 0) {
-      var sql = "select * from users where user_name=?";
-      connection.query(sql, [user_name], async function (err, results, cache) {
-        if (err) {
-          res.send({
-            status: 400,
-            message: "error2",
-            data: [],
-          });
-        } else if (results.length > 0) {
-          if (cache.isCache == false) {
-            connection.flush();
-          }
-          res.send({
-            status: 400,
-            message: "Username is already exist.!",
-            data: [],
-          });
-        } else {
-          var password = md5(req.body.password);
-          var sql1 =
-            "insert into users (user_name,password,gender,family_id,phone,email_id,status,fcm_token,user_profile) values ? ";
-          var VALUES = [
-            [
-              user_name,
-              password,
-              req.body.gender,
-              family_id,
-              req.body.phone,
-              req.body.email_id,
-              "0",
-              fcm_token,
-              user_profile,
-            ],
-          ];
-          connection.query(
-            sql1,
-            [VALUES],
-            async function (err, result1, cache) {
-              if (err) {
-                res.send({
-                  status: 400,
-                  message: "error3",
-                  data: [],
-                });
-              } else if (result1.affectedRows > 0) {
-                var sql1 =
-                  "SELECT fp.*,u.phone,u.fcm_token FROM family_profile fp JOIN users u ON u.id=fp.family_owner WHERE fp.id=? AND fp.status='0'";
-                connection.query(
-                  sql1,
-                  [family_id],
-                  async function (err, resultsl, cache) {
-                    if (err) {
-                      res.send({
-                        status: 400,
-                        message: "error4",
-                        data: [],
-                      });
-                    } else {
-                      if (cache.isCache == false) {
-                        connection.flush();
-                      }
-                      if (req.body.link == "1") {
-                        await invite_insert_member(
-                          req.body.phone,
-                          user_name,
-                          req.body.gender,
-                          family_id,
-                          relatives,
-                          req.body.node_id,
-                          resultsl[0].family_owner,
-                          resultsl[0].fcm_token,
-                          result1.insertId
-                        );
+    } else {
+      var password = md5(req.body.password);
+      // var sql1 =
+      //   "update users set user_name=?,password=?,gender=?,email_id=?,status=?,user_profile=?,country_code=?,country=? where id=? ";
+      var sql1 = "insert into users (user_name,password,gender,email_id,status,user_profile,phone,country,country_code,fcm_token) SELECT ?,?,?,?,?,?,t.phone,t.country,t.country_code,t.fcm_token  from temp_users t where t.id=?"
+
+      connection.query(
+        sql1,
+        [user_name,
+          password,
+          req.body.gender,
+          req.body.email_id,
+          "0",
+          user_profile,
+          req.body.temp_userId],
+        async function (err, result1, cache) {
+          if (err) {
+            res.send({
+              status: 400,
+              message: "error3",
+              data: [],
+            });
+          } 
+
+            var deletesql = "DELETE FROM temp_users  WHERE phone in (select u.phone from users u where u.id=? )"
+            connection.query(
+              deletesql,
+              [result1.insertId],
+              async function (err, del, cache) {
+                if (err) {
+                  res.send({
+                    status: 400,
+                    message: "error3",
+                    data: [],
+                  });
+                }
+                else {
+                  var sql1 =
+                    "SELECT fp.*,u.phone,u.fcm_token FROM family_profile fp JOIN users u ON u.id=fp.family_owner WHERE fp.id=? AND fp.status='0'";
+                  connection.query(
+                    sql1,
+                    [family_id],
+                    async function (err, resultsl, cache) {
+                      if (err) {
                         res.send({
-                          status: 200,
-                          message: "User Registered successfully",
+                          status: 400,
+                          message: "error4",
                           data: [],
-                          family_status: req.body.link == "1" ? "1" : "0",
-                          user_id: result1.insertId,
                         });
                       } else {
-                        res.send({
-                          status: 200,
-                          message: "User Registered successfully",
-                          data: [],
-                          family_status: req.body.link == "1" ? "1" : "0",
-                          user_id: result1.insertId,
-                        });
+                        if (cache.isCache == false) {
+                          connection.flush();
+                        }
+                        if (req.body.link == "1") {
+                          var sql1 =
+                            "INSERT INTO users_family_details(user_id,family_id) VALUES ?";
+                            var VALUES=[[result1.insertId, family_id],]
+                          connection.query(
+                            sql1,
+                            [VALUES],
+                            async function (err, results, cache) {
+                              if (err) {
+                                res.send({
+                                  status: 400,
+                                  message: "error4",
+                                  data: [],
+                                });
+                              }
+
+                              else {
+                                await invite_insert_member(
+                                  req.body.phone,
+                                  user_name,
+                                  req.body.gender,
+                                  family_id,
+                                  relatives,
+                                  req.body.node_id,
+                                  resultsl[0].family_owner,
+                                  resultsl[0].fcm_token,
+                                  result1.insertId
+                                );
+                                res.send({
+                                  status: 200,
+                                  message: "User Registered successfully",
+                                  data: [],
+                                  family_status: req.body.link == "1" ? "1" : "0",
+                                  user_id: result1.insertId,
+                                  user_name: user_name
+                                });
+
+
+
+                              }
+                            });
+
+
+                        } else {
+                          res.send({
+                            status: 200,
+                            message: "User Registered successfully",
+                            data: [],
+                            family_status: req.body.link == "1" ? "1" : "0",
+                            user_id: result1.insertId,
+                            user_name: user_name
+                          });
+                        }
                       }
                     }
-                  }
-                );
-              }
-            }
-          );
+                  );
+
+                }
+              });
+
+
+
+          
         }
-      });
+      );
     }
   });
+  // }
+  // });
 };
 
 const user_login = (req, res) => {
   var password = md5(req.body.password);
-  var sql = "select * from users where user_name=? and status='0' ";
+  var sql = "select * from users where (user_name=? and status='0')|| (email_id=? and status='0')||(phone=? and status='0')||(CONCAT(country_code,phone)=? and status='0') ";
   connection.query(
     sql,
-    [req.body.user_name],
-    async function (err, result, cache) {
+    [req.body.user_name, req.body.user_name, req.body.user_name, req.body.user_name],
+    function (err, result, cache) {
+
+      if (cache.isCache == false) {
+        connection.flush();
+      }
       if (err) {
         res.send({
           status: "400",
           message: "error",
           data: [],
         });
-      } else if (result.length > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        console.log(result.length, "len");
+      } 
+      
+      else if (result.length > 0) {
+
+
         if (cache.isCache == false) {
           connection.flush();
         }
@@ -1082,27 +1199,30 @@ const user_login = (req, res) => {
           var sql1 = "update users set fcm_token=? where id=?";
           connection.query(
             sql1,
-            [req.body.fcm_token,result[0].id],
-            async function (err, result1, cache) {
-              if(err){
-                
+            [req.body.fcm_token, result[0].id],
+            function (err, result1, cache) {
+              if (err) {
+
                 res.send({
                   status: "400",
                   message: "error",
                   data: [],
                 });
-              }else{
-
-          res.send({
-            status: 200,
-            message: "User login successfully..!",
-            data: result,
-            family_status: "1",
-            user_id: result[0].id,
-            family_id: result[0].family_id,
-          });
-        }
-        });
+              } else {
+                if (cache.isCache == false) {
+                  connection.flush();
+                }
+                res.send({
+                  status: 200,
+                  message: "User login successfully..!",
+                  data: result,
+                  family_status: "1",
+                  user_id: result[0].id,
+                  family_id: result[0].family_id,
+                  user_name: result[0].user_name
+                });
+              }
+            });
         } else {
           res.send({
             status: 400,
@@ -1177,6 +1297,9 @@ const save_nodeid = (req, res) => {
               data: [],
             });
           } else {
+            if (cache.isCache == false) {
+              connection.flush();
+            }
             res.send({
               message: "updated successfully",
               status: 200,
@@ -1196,6 +1319,9 @@ const save_nodeid = (req, res) => {
             data: [],
           });
         } else {
+          if (cache.isCache == false) {
+            connection.flush();
+          }
           res.send({
             message: "Inserted successfully",
             status: 200,
@@ -1310,10 +1436,11 @@ const insert_family_profile = (req, res) => {
               });
             } else {
               var sql2 =
-                "update users set family_id=? where id=? and status='0'";
+                "insert  into users_family_details( family_id,user_id) values ?";
+              var VALUES = [[result.insertId, req.body.user_id],];
               connection.query(
                 sql2,
-                [result.insertId, req.body.user_id],
+                [VALUES],
                 function (err, result3, cache) {
                   if (err) {
                     res.send({
@@ -1476,6 +1603,288 @@ const getChatUserDetailsById = async (req, res) => {
   });
 };
 
+const GetUserDetailsById = async (req, res) => {
+  var sql2 =
+    "SELECT i.id as user_id,i.user_name,i.fcm_token  FROM users i WHERE i.id=? ";
+  connection.query(sql2, [req.body.user_id], function (err, result3, cache) {
+    if (err) {
+      res.send({
+        message: "error",
+        status: 400,
+        data: [],
+      });
+    } else {
+      res.send({
+        status: 200,
+        message: result3,
+      });
+    }
+  });
+
+};
+
+
+
+const sendOtps = async (req, res, next) => {
+  var response = [];
+  // var otp = otpGenerator.generate(6, { specialChars: false, alphabets: false, upperCase: false })
+  var phone = req.body.phone.toString().trim();
+  var fcm_token = req.body.fcm_token;
+  var country_code = "+91";
+  var country = "India";
+
+  var sql = "select * from users where phone=? and delete_flag='0'";
+  connection.query(sql, [req.body.phone], async function (err, userslist, cache) {
+    if (err) {
+      response = {
+        status: '400',
+        message: 'No Data Found',
+        response: err,
+      }
+      res.status(400).send(response);
+    } else {
+      if (cache.isCache == false) {
+        connection.flush();
+      }
+      if (userslist.length > 0) {
+
+        var sql = "update users set fcm_token=? where id=?";
+        connection.query(sql, [fcm_token, userslist[0].id], async function (err, resu, cache) {
+          if (err) {
+            response = {
+              status: '400',
+              message: 'No Data Found',
+              response: err,
+            }
+            res.status(400).send(response);
+          } else {
+            if (cache.isCache == false) {
+              connection.flush();
+            }
+
+            if (req.body.link == "1") {
+              response.push({
+                "user_id": userslist[0].id,
+                "phone": userslist[0].phone,
+                "user_name": userslist[0].user_name,
+                "gender": userslist[0].gender
+              })
+              res.send({
+                status: "200",
+                type: "1",
+                response: response
+              });
+            }
+            else {
+              res.send({
+                status: "400",
+                message: "Phone Number Already In Use!...."
+              })
+            }
+
+          }
+        });
+
+      } else {
+
+        var sql = "INSERT  INTO temp_users(phone,fcm_token,country,country_code) values ?";
+        var VALUES = [
+          [phone, fcm_token, country, country_code],
+        ];
+        connection.query(sql, [VALUES], async function (err, result, cache) {
+          if (err) {
+            response = {
+              status: '400',
+              message: 'No Data Found',
+              response: err,
+            }
+            res.status(400).send(response);
+          } else {
+            if (cache.isCache == false) {
+              connection.flush();
+            }
+            response.push({
+              temp_userId: result.insertId
+            })
+            res.send({
+              status: "200",
+              type: "0",
+              response: response
+            });
+
+          }
+        });
+
+      }
+    }
+
+  });
+
+};
+
+const updateUserFamilyDetails = async (req, res, next) => {
+  var family_id = req.body.family_id;
+  var relatives = req.body.relatives;
+  var user_name = req.body.user_name.toString().trim();
+  var sql1 =
+    "SELECT fp.*,u.phone,u.fcm_token FROM family_profile fp JOIN users u ON u.id=fp.family_owner WHERE fp.id=? AND fp.status='0'";
+  connection.query(
+    sql1,
+    [family_id],
+    async function (err, resultsl, cache) {
+      if (err) {
+        res.send({
+          status: 400,
+          message: "error4",
+          data: [],
+        });
+      } else {
+        if (cache.isCache == false) {
+          connection.flush();
+        }
+        var sql1 =
+          "INSERT INTO users_family_details(user_id,family_id) VALUES ?";
+        var VALUES = [[req.body.user_id, family_id],]
+        connection.query(
+          sql1,
+          [VALUES],
+          async function (err, results, cache) {
+            if (err) {
+              res.send({
+                status: 400,
+                message: "error4",
+                data: [],
+              });
+            }
+            else {
+              await invite_insert_member(
+                req.body.phone,
+                user_name,
+                req.body.gender,
+                family_id,
+                relatives,
+                req.body.node_id,
+                resultsl[0].family_owner,
+                resultsl[0].fcm_token,
+                req.body.user_id
+              );
+              res.send({
+                status: 200,
+                message: "User Registered successfully",
+                data: [],
+                family_status: req.body.link == "1" ? "1" : "0",
+                user_id: req.body.user_id,
+                user_name: user_name
+              });
+            }
+          });
+      }
+    }
+  );
+};
+
+
+const GetAllFamilyProfileDetailsByUserId = async (req, res) => {
+
+  var group_id = req.body.group_id || null;
+  var sql2 =
+    "SELECT  i.id as family_id,i.profile_name,i.family_owner,i.status ,IF(i.family_owner=?,'1','0') as owner_status FROM family_profile AS i WHERE i.id IN( SELECT j.family_id FROM family_details AS j WHERE j.user_id=?) ";
+  connection.query(sql2, [req.body.user_id, req.body.user_id], function (err, result3, cache) {
+    if (err) {
+      res.send({
+        message: "error",
+        status: 400,
+        data: [],
+      });
+    } else {
+      if (cache.isCache == false) {
+        connection.flush();
+      }
+      var response = [];
+      if (result3.length > 0) {
+        result3.forEach((vals) => {
+          getAllFamilyMembers(vals.family_id, req.body.user_id, group_id).then((members) => {
+
+            response.push({
+              "family_id": vals.family_id,
+              "profile_name": vals.profile_name,
+              "family_owner_Id": vals.family_owner,
+              "status": vals.status,
+              "owner_status": vals.owner_status,
+              "members": members
+
+            })
+            result3.length == response.length && response.sort((a, b) => a.family_id - b.family_id) && res.send({
+              status: "200",
+              message: "Data Found",
+              response: response
+            });
+          })
+
+        })
+      }
+
+      else {
+        res.send({
+          status: "200",
+          message: "No Data Found",
+          response: []
+        });
+      }
+    }
+  });
+
+};
+
+async function getAllFamilyMembers(family_id, user_id, group_id) {
+  return new Promise(async function (resolve, reject) {
+    var sql1 = group_id == null ? "SELECT u.id AS user_id,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,IF(u.id=j.family_owner,'1','0') as owner_status  FROM users u JOIN  family_details AS i ON u.id=i.user_id JOIN family_profile j ON j.id=i.family_id WHERE i.family_id=? AND i.user_id!='' AND i.user_id!=?" :
+      "SELECT u.id AS user_id,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,IF(u.id=j.family_owner,'1','0') as owner_status   FROM users u JOIN  family_details AS i ON u.id=i.user_id JOIN family_profile j ON j.id=i.family_id WHERE i.family_id=? AND i.user_id!='' AND i.user_id!=? AND i.user_id NOT IN (SELECT g.user_id FROM group_members g WHERE g.group_id=? and g.status='0') "
+
+    connection.query(sql1, [process.env.profile_image_show_path, family_id, user_id, group_id], function (err, ret, cache) {
+
+      if (ret.length > 0) {
+        console.log(ret)
+        ret = ret.map((r) => { r.isChecked = false; return r })
+        resolve(ret)
+      }
+      else {
+        if (cache.isCache == false) {
+          connection.flush();
+        }
+        resolve([])
+      }
+    });
+
+
+  });
+};
+
+const getRemovedFamilyMembers = async (req, res, next) => {
+  var remove_ids = req.body.remove_ids;
+
+  getAllFamilyMembers(req.body.family_id, req.body.user_id, null).then((members) => {
+
+    members = members.map((r) => {
+      remove_ids.includes(r.user_id) ? r.isChecked = true : r.isChecked = false; return r;
+    })
+    res.send({
+      status: "200",
+      message: "Data Found",
+      response: members
+    });
+  })
+
+}
+
+
+function check(){
+  var pass="123@ABC.com"
+  
+  console.log(md5(pass))
+}
+check();
+
 module.exports = {
   insert_data,
   get_data,
@@ -1492,4 +1901,11 @@ module.exports = {
   read_notifications,
   getUserIdByNodeId,
   getChatUserDetailsById,
+  GetUserDetailsById,
+
+  sendOtps,
+  updateUserFamilyDetails,
+  getRemovedFamilyMembers, GetAllFamilyProfileDetailsByUserId
+
+
 };

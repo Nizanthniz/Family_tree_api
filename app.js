@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 var path = require('path'); 
 const cookieparser = require("cookie-parser");
+
 const cors = require("cors");
 var conn = require('./config/db');
 var fs=require('fs')
@@ -49,6 +50,23 @@ conn.connect((err)=>{
 
 app.use(api_prefix+'/users',require('./modules/users/users.routes'));
 app.use(api_prefix+'/post',require('./modules/post/post.routes'));
+app.use(api_prefix+'/group',require('./modules/group/group.routes'));
+
+// function parallel(middlewares) {
+//     return function (req, res, next) {
+//       async.each(middlewares, function (mw, cb) {
+//         mw(req, res, cb);
+//       }, next);
+//     };
+//   }
+
+//   app.use(parallel([
+//     api_prefix+'/users',require('./modules/users/users.routes'),
+//     api_prefix+'/post',require('./modules/post/post.routes'),
+//     api_prefix+'/group',require('./modules/group/group.routes')
+   
+//   ]));
+
 
 // cron.schedule('20 22 * * *', async () => { /// one weekly repition
 // cron.schedule('*/1 * * * *', async () => {
