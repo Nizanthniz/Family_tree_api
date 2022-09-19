@@ -307,7 +307,7 @@ const getAllGroupBYUserId = (req, res, next) => {
     var response = [];
     var user_id = req.body.user_id;
 
-    var sql = "SELECT g.id AS group_id,g.group_title,g.description ,g.owner_id,if(g.owner_id=?,'1','0') AS owner_status,,if((SELECT COUNT(*) FROM `group_members` l WHERE l.group_id=g.id)>1,1,0)AS members   FROM `group` g  LEFT JOIN group_members k ON  k.group_id=g.id  WHERE  g.owner_id=? OR g.id IN (SELECT gp.group_id   FROM  group_members  gp WHERE gp.user_id=? AND gp.`status`='0') AND g.is_delete=0  group BY g.id";
+    var sql = "SELECT g.id AS group_id,g.group_title,g.description ,g.owner_id,if(g.owner_id=?,'1','0') AS owner_status,if((SELECT COUNT(*) FROM `group_members` l WHERE l.group_id=g.id)>1,1,0)AS members   FROM `group` g  LEFT JOIN group_members k ON  k.group_id=g.id  WHERE  g.owner_id=? OR g.id IN (SELECT gp.group_id   FROM  group_members  gp WHERE gp.user_id=? AND gp.`status`='0') AND g.is_delete=0  group BY g.id";
     connection.query(sql, [user_id, user_id, user_id], function (err, result, cache) {
         if (err) {
             response = {
