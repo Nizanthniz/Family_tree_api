@@ -191,7 +191,7 @@ const addmemberingroup = (req, res, next) => {
 const getallmembersbygroupid = (req, res, next) => {
 
 
-     var sql="SELECT u.id AS user_id,u.fcm_token,u.user_name,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,if(u.id=( SELECT l.owner_id FROM `group` l WHERE l.id=?),1,0 ) as owner_status,if((SELECT COUNT(*) FROM `group_members` la WHERE la.group_id=?)>1,1,0) AS members   FROM users u   left JOIN `group` g ON g.owner_id =u.id LEFT JOIN group_members gp ON gp.group_id=g.id  where u.id IN (SELECT g.owner_id FROM `group` g WHERE g.id=?) OR u.id IN( SELECT gp.user_id FROM group_members gp WHERE gp.group_id=? AND gp.`status`='0') group BY u.id ";
+     var sql="SELECT u.id AS user_id,u.fcm_token,u.user_name,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,if(u.id=( SELECT l.owner_id FROM `group` l WHERE l.id=?),1,0 ) as owner_status,if((SELECT COUNT(*) FROM `group_members` l WHERE l.group_id=g.id)>1,1,0)AS members  FROM users u   left JOIN `group` g ON g.owner_id =u.id LEFT JOIN group_members gp ON gp.group_id=g.id  where u.id IN (SELECT g.owner_id FROM `group` g WHERE g.id=?) OR u.id IN( SELECT gp.user_id FROM group_members gp WHERE gp.group_id=? AND gp.`status`='0') group BY u.id ";
 
     // var sql = "SELECT u.id AS user_id,u.user_name,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,gp.is_owner as owner_status   FROM users u   left JOIN `group` g ON g.owner_id =u.id LEFT JOIN group_members gp ON gp.group_id=g.id  where u.id IN (SELECT g.owner_id FROM `group` g WHERE g.id=?) OR u.id IN( SELECT gp.user_id FROM group_members gp WHERE gp.group_id=? AND gp.`status`='0')  Group BY u.id";
 
@@ -307,7 +307,7 @@ const getAllGroupBYUserId = (req, res, next) => {
     var response = [];
     var user_id = req.body.user_id;
 
-    var sql = "SELECT g.id AS group_id,g.group_title,g.description ,g.owner_id,if(g.owner_id=?,'1','0') AS owner_status  FROM `group` g  LEFT JOIN group_members k ON  k.group_id=g.id  WHERE  g.owner_id=? OR g.id IN (SELECT gp.group_id   FROM  group_members  gp WHERE gp.user_id=? AND gp.`status`='0') AND g.is_delete=0  group BY g.id";
+    var sql = "SELECT g.id AS group_id,g.group_title,g.description ,g.owner_id,if(g.owner_id=?,'1','0') AS owner_status,if((SELECT COUNT(*) FROM `group_members` la WHERE la.group_id=?)>1,1,0) AS members  FROM `group` g  LEFT JOIN group_members k ON  k.group_id=g.id  WHERE  g.owner_id=? OR g.id IN (SELECT gp.group_id   FROM  group_members  gp WHERE gp.user_id=? AND gp.`status`='0') AND g.is_delete=0  group BY g.id";
     connection.query(sql, [user_id, user_id, user_id], function (err, result, cache) {
         if (err) {
             response = {
