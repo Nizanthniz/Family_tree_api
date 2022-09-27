@@ -1,5 +1,5 @@
 var connection = require("../../config/db");
-var countryTelData = require('country-telephone-data')
+var countryTelData = require("country-telephone-data");
 var md5 = require("md5");
 const moment = require("moment");
 
@@ -347,6 +347,7 @@ const insert_data = (req, res, next) => {
   var gender = req.body.gender;
 
   var dob = req.body.dob;
+  var death = req.body.death;
   var phone = req.body.phone;
   console.log(fid);
 
@@ -375,7 +376,7 @@ const insert_data = (req, res, next) => {
           }
         }
         var sql1 =
-          "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile) values ?";
+          "insert into family_details (mid,fid,name,gender,phone,dob,death,family_id,pids,profile) values ?";
         var VALUES = [
           [
             mid,
@@ -384,6 +385,7 @@ const insert_data = (req, res, next) => {
             gender,
             phone,
             dob,
+            death,
             req.body.family_id,
             pids,
             image_name,
@@ -410,7 +412,7 @@ const insert_data = (req, res, next) => {
 
   if (req.body.relatives == "spouse") {
     var sql1 =
-      "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile) values ?";
+      "insert into family_details (mid,fid,name,gender,phone,dob,death,family_id,pids,profile) values ?";
     var VALUES = [
       [
         mid,
@@ -419,6 +421,7 @@ const insert_data = (req, res, next) => {
         gender,
         phone,
         dob,
+        death,
         req.body.family_id,
         pids,
         image_name,
@@ -525,10 +528,10 @@ const insert_data = (req, res, next) => {
   }
 
   if (req.body.relatives == "parent") {
-
-    var sql1 = gender == 1 ? "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile) SELECT ?, ?, ?,?,?,?, ?, i.`mid`,? FROM family_details i WHERE id=?" :
-      "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile) SELECT ?, ?, ?,?,?,?, ?, i.fid,? FROM family_details i WHERE id=?"
-
+    var sql1 =
+      gender == 1
+        ? "insert into family_details (mid,fid,name,gender,phone,dob,death,family_id,pids,profile) SELECT ?, ?, ?,?,?,?, ?,?, i.`mid`,? FROM family_details i WHERE id=?"
+        : "insert into family_details (mid,fid,name,gender,phone,dob,death,family_id,pids,profile) SELECT ?, ?, ?,?,?,?,?, ?, i.fid,? FROM family_details i WHERE id=?";
 
     // var VALUES = [
     //   [
@@ -543,14 +546,21 @@ const insert_data = (req, res, next) => {
     //     image_name,
     //   ],
     // ];
-    connection.query(sql1, [mid,
-      fid,
-      name,
-      gender,
-      phone,
-      dob,
-      req.body.family_id,
-      image_name, req.body.nodeId], function (err, result1sss) {
+    connection.query(
+      sql1,
+      [
+        mid,
+        fid,
+        name,
+        gender,
+        phone,
+        dob,
+        death,
+        req.body.family_id,
+        image_name,
+        req.body.nodeId,
+      ],
+      function (err, result1sss) {
         if (err) {
           console.log("err", err);
           res.send({
@@ -560,9 +570,6 @@ const insert_data = (req, res, next) => {
           });
         } else {
           if (gender == 1) {
-
-
-
             var sql2 = "update family_details set fid=? where id=?";
 
             connection.query(
@@ -576,9 +583,8 @@ const insert_data = (req, res, next) => {
                     data: [],
                   });
                 } else {
-
-
-                  var sql3 = "UPDATE family_details AS i JOIN(SELECT mid,fid FROM family_details WHERE id=?) AS j SET i.pids=j.fid WHERE i.id =j.mid";
+                  var sql3 =
+                    "UPDATE family_details AS i JOIN(SELECT mid,fid FROM family_details WHERE id=?) AS j SET i.pids=j.fid WHERE i.id =j.mid";
 
                   connection.query(
                     sql3,
@@ -616,7 +622,8 @@ const insert_data = (req, res, next) => {
                     data: [],
                   });
                 } else {
-                  var sql3 = "UPDATE family_details AS i JOIN(SELECT mid,fid FROM family_details WHERE id=?) AS j SET i.pids=j.mid WHERE i.id =j.fid";
+                  var sql3 =
+                    "UPDATE family_details AS i JOIN(SELECT mid,fid FROM family_details WHERE id=?) AS j SET i.pids=j.mid WHERE i.id =j.fid";
 
                   connection.query(
                     sql3,
@@ -642,13 +649,8 @@ const insert_data = (req, res, next) => {
             );
           }
         }
-
-
-
-
-
-
-      });
+      }
+    );
   }
 
   if (req.body.relatives == "siblings") {
@@ -665,7 +667,7 @@ const insert_data = (req, res, next) => {
 
         mid = result2[0].mid;
         var sql1 =
-          "insert into family_details (mid,fid,name,gender,phone,dob,family_id,pids,profile) values ?";
+          "insert into family_details (mid,fid,name,gender,phone,dob,death,family_id,pids,profile) values ?";
         var VALUES = [
           [
             mid,
@@ -674,6 +676,7 @@ const insert_data = (req, res, next) => {
             gender,
             phone,
             dob,
+            death,
             req.body.family_id,
             pids,
             image_name,
@@ -817,7 +820,6 @@ const get_data = (req, res, next) => {
                   // chat_flag =
                   //   presult.user_id == req.body.user_id ? false : true;
 
-
                   response.push({
                     pids: pids,
                     mid: arr.includes(presult.mid) ? null : presult.mid,
@@ -825,6 +827,7 @@ const get_data = (req, res, next) => {
                     name: presult.name,
                     gender: gender,
                     dob: presult.dob,
+                    death: presult.death,
                     phone: presult.phone,
                     famliy_id: presult.family_id,
                     id: presult.id,
@@ -835,7 +838,6 @@ const get_data = (req, res, next) => {
                     user_id: presult.user_id,
                     chat_flag: chat_flag,
                   });
-
 
                   console.log(response.length);
                   result1sss.length == response.length &&
@@ -875,7 +877,10 @@ const get_data = (req, res, next) => {
                       : true;
                   chat_flag =
                     presult.user_id == req.body.user_id ? false : true;
-                  if (presult.user_id == req.body.user_id || presult.user_id == null) {
+                  if (
+                    presult.user_id == req.body.user_id ||
+                    presult.user_id == null
+                  ) {
                     response.push({
                       pids: pids,
                       mid: presult.mid,
@@ -883,6 +888,7 @@ const get_data = (req, res, next) => {
                       name: presult.name,
                       gender: gender,
                       dob: presult.dob,
+                      death: presult.death,
                       phone: presult.phone,
                       famliy_id: presult.family_id,
                       id: presult.id,
@@ -901,6 +907,7 @@ const get_data = (req, res, next) => {
                       name: presult.name,
                       gender: gender,
                       dob: presult.dob,
+                      death: presult.death,
                       phone: presult.phone,
                       famliy_id: presult.family_id,
                       id: presult.id,
@@ -910,7 +917,7 @@ const get_data = (req, res, next) => {
                       first_node: family_length > 1 ? false : true,
                       user_id: presult.user_id,
                       chat_flag: chat_flag,
-                      tags: ["overrideMenu"]
+                      tags: ["overrideMenu"],
                     });
                   }
                   console.log(response.length);
@@ -1049,17 +1056,20 @@ const user_signup = async (req, res) => {
       var password = md5(req.body.password);
       // var sql1 =
       //   "update users set user_name=?,password=?,gender=?,email_id=?,status=?,user_profile=?,country_code=?,country=? where id=? ";
-      var sql1 = "insert into users (user_name,password,gender,email_id,status,user_profile,phone,country,country_code,fcm_token) SELECT ?,?,?,?,?,?,t.phone,t.country,t.country_code,t.fcm_token  from temp_users t where t.id=?"
+      var sql1 =
+        "insert into users (user_name,password,gender,email_id,status,user_profile,phone,country,country_code,fcm_token) SELECT ?,?,?,?,?,?,t.phone,t.country,t.country_code,t.fcm_token  from temp_users t where t.id=?";
 
       connection.query(
         sql1,
-        [user_name,
+        [
+          user_name,
           password,
           req.body.gender,
           req.body.email_id,
           "0",
           user_profile,
-          req.body.temp_userId],
+          req.body.temp_userId,
+        ],
         async function (err, result1, cache) {
           if (err) {
             res.send({
@@ -1067,100 +1077,90 @@ const user_signup = async (req, res) => {
               message: "error3",
               data: [],
             });
-          } 
+          }
 
-            var deletesql = "DELETE FROM temp_users  WHERE phone in (select u.phone from users u where u.id=? )"
-            connection.query(
-              deletesql,
-              [result1.insertId],
-              async function (err, del, cache) {
-                if (err) {
-                  res.send({
-                    status: 400,
-                    message: "error3",
-                    data: [],
-                  });
-                }
-                else {
-                  var sql1 =
-                    "SELECT fp.*,u.phone,u.fcm_token FROM family_profile fp JOIN users u ON u.id=fp.family_owner WHERE fp.id=? AND fp.status='0'";
-                  connection.query(
-                    sql1,
-                    [family_id],
-                    async function (err, resultsl, cache) {
-                      if (err) {
-                        res.send({
-                          status: 400,
-                          message: "error4",
-                          data: [],
-                        });
+          var deletesql =
+            "DELETE FROM temp_users  WHERE phone in (select u.phone from users u where u.id=? )";
+          connection.query(
+            deletesql,
+            [result1.insertId],
+            async function (err, del, cache) {
+              if (err) {
+                res.send({
+                  status: 400,
+                  message: "error3",
+                  data: [],
+                });
+              } else {
+                var sql1 =
+                  "SELECT fp.*,u.phone,u.fcm_token FROM family_profile fp JOIN users u ON u.id=fp.family_owner WHERE fp.id=? AND fp.status='0'";
+                connection.query(
+                  sql1,
+                  [family_id],
+                  async function (err, resultsl, cache) {
+                    if (err) {
+                      res.send({
+                        status: 400,
+                        message: "error4",
+                        data: [],
+                      });
+                    } else {
+                      if (cache.isCache == false) {
+                        connection.flush();
+                      }
+                      if (req.body.link == "1") {
+                        var sql1 =
+                          "INSERT INTO users_family_details(user_id,family_id) VALUES ?";
+                        var VALUES = [[result1.insertId, family_id]];
+                        connection.query(
+                          sql1,
+                          [VALUES],
+                          async function (err, results, cache) {
+                            if (err) {
+                              res.send({
+                                status: 400,
+                                message: "error4",
+                                data: [],
+                              });
+                            } else {
+                              await invite_insert_member(
+                                req.body.phone,
+                                user_name,
+                                req.body.gender,
+                                family_id,
+                                relatives,
+                                req.body.node_id,
+                                resultsl[0].family_owner,
+                                resultsl[0].fcm_token,
+                                result1.insertId
+                              );
+                              res.send({
+                                status: 200,
+                                message: "User Registered successfully",
+                                data: [],
+                                family_status: req.body.link == "1" ? "1" : "0",
+                                user_id: result1.insertId,
+                                user_name: user_name,
+                              });
+                            }
+                          }
+                        );
                       } else {
-                        if (cache.isCache == false) {
-                          connection.flush();
-                        }
-                        if (req.body.link == "1") {
-                          var sql1 =
-                            "INSERT INTO users_family_details(user_id,family_id) VALUES ?";
-                            var VALUES=[[result1.insertId, family_id],]
-                          connection.query(
-                            sql1,
-                            [VALUES],
-                            async function (err, results, cache) {
-                              if (err) {
-                                res.send({
-                                  status: 400,
-                                  message: "error4",
-                                  data: [],
-                                });
-                              }
-
-                              else {
-                                await invite_insert_member(
-                                  req.body.phone,
-                                  user_name,
-                                  req.body.gender,
-                                  family_id,
-                                  relatives,
-                                  req.body.node_id,
-                                  resultsl[0].family_owner,
-                                  resultsl[0].fcm_token,
-                                  result1.insertId
-                                );
-                                res.send({
-                                  status: 200,
-                                  message: "User Registered successfully",
-                                  data: [],
-                                  family_status: req.body.link == "1" ? "1" : "0",
-                                  user_id: result1.insertId,
-                                  user_name: user_name
-                                });
-
-
-
-                              }
-                            });
-
-
-                        } else {
-                          res.send({
-                            status: 200,
-                            message: "User Registered successfully",
-                            data: [],
-                            family_status: req.body.link == "1" ? "1" : "0",
-                            user_id: result1.insertId,
-                            user_name: user_name
-                          });
-                        }
+                        res.send({
+                          status: 200,
+                          message: "User Registered successfully",
+                          data: [],
+                          family_status: req.body.link == "1" ? "1" : "0",
+                          user_id: result1.insertId,
+                          user_name: user_name,
+                        });
                       }
                     }
-                  );
-
-                }
-              });
-
-
-
-          
+                  }
+                );
+              }
+            }
+          );
         }
       );
     }
@@ -1171,12 +1171,17 @@ const user_signup = async (req, res) => {
 
 const user_login = (req, res) => {
   var password = md5(req.body.password);
-  var sql = "select * from users where (user_name=? and status='0')|| (email_id=? and status='0')||(phone=? and status='0')||(CONCAT(country_code,phone)=? and status='0') ";
+  var sql =
+    "select * from users where (user_name=? and status='0')|| (email_id=? and status='0')||(phone=? and status='0')||(CONCAT(country_code,phone)=? and status='0') ";
   connection.query(
     sql,
-    [req.body.user_name, req.body.user_name, req.body.user_name, req.body.user_name],
+    [
+      req.body.user_name,
+      req.body.user_name,
+      req.body.user_name,
+      req.body.user_name,
+    ],
     function (err, result, cache) {
-
       if (cache.isCache == false) {
         connection.flush();
       }
@@ -1186,11 +1191,7 @@ const user_login = (req, res) => {
           message: "error",
           data: [],
         });
-      } 
-      
-      else if (result.length > 0) {
-
-
+      } else if (result.length > 0) {
         if (cache.isCache == false) {
           connection.flush();
         }
@@ -1202,7 +1203,6 @@ const user_login = (req, res) => {
             [req.body.fcm_token, result[0].id],
             function (err, result1, cache) {
               if (err) {
-
                 res.send({
                   status: "400",
                   message: "error",
@@ -1219,10 +1219,11 @@ const user_login = (req, res) => {
                   family_status: "1",
                   user_id: result[0].id,
                   family_id: result[0].family_id,
-                  user_name: result[0].user_name
+                  user_name: result[0].user_name,
                 });
               }
-            });
+            }
+          );
         } else {
           res.send({
             status: 400,
@@ -1391,8 +1392,9 @@ const get_relatives = (req, res) => {
 };
 
 const insert_family_profile = (req, res) => {
-  var sql = "insert into family_profile  (profile_name,family_owner) values ?";
-  var VALUES = [[req.body.profile_name, req.body.user_id]];
+  var sql =
+    "insert into family_profile  (profile_name,family_owner,history) values ?";
+  var VALUES = [[req.body.profile_name, req.body.user_id, req.body.history]];
   connection.query(sql, [VALUES], function (err, result, cache) {
     if (err) {
       res.send({
@@ -1424,7 +1426,7 @@ const insert_family_profile = (req, res) => {
               result.insertId,
               result1[0].gender,
               req.body.user_id,
-              '1'
+              "1",
             ],
           ];
           connection.query(sql1, [VALUES], function (err, result2, cache) {
@@ -1437,28 +1439,24 @@ const insert_family_profile = (req, res) => {
             } else {
               var sql2 =
                 "insert  into users_family_details( family_id,user_id) values ?";
-              var VALUES = [[result.insertId, req.body.user_id],];
-              connection.query(
-                sql2,
-                [VALUES],
-                function (err, result3, cache) {
-                  if (err) {
-                    res.send({
-                      message: "error",
-                      status: 400,
-                      data: [],
-                    });
-                  } else if (result3.affectedRows > 0) {
-                    res.send({
-                      message: "Data inserted succesfully",
-                      data: [],
-                      status: 200,
-                      family_id: result.insertId,
-                      family_status: "1",
-                    });
-                  }
+              var VALUES = [[result.insertId, req.body.user_id]];
+              connection.query(sql2, [VALUES], function (err, result3, cache) {
+                if (err) {
+                  res.send({
+                    message: "error",
+                    status: 400,
+                    data: [],
+                  });
+                } else if (result3.affectedRows > 0) {
+                  res.send({
+                    message: "Data inserted succesfully",
+                    data: [],
+                    status: 200,
+                    family_id: result.insertId,
+                    family_status: "1",
+                  });
                 }
-              );
+              });
             }
           });
         }
@@ -1620,10 +1618,7 @@ const GetUserDetailsById = async (req, res) => {
       });
     }
   });
-
 };
-
-
 
 const sendOtps = async (req, res, next) => {
   var response = [];
@@ -1634,92 +1629,90 @@ const sendOtps = async (req, res, next) => {
   var country = "India";
 
   var sql = "select * from users where phone=? and delete_flag='0'";
-  connection.query(sql, [req.body.phone], async function (err, userslist, cache) {
-    if (err) {
-      response = {
-        status: '400',
-        message: 'No Data Found',
-        response: err,
-      }
-      res.status(400).send(response);
-    } else {
-      if (cache.isCache == false) {
-        connection.flush();
-      }
-      if (userslist.length > 0) {
+  connection.query(
+    sql,
+    [req.body.phone],
+    async function (err, userslist, cache) {
+      if (err) {
+        response = {
+          status: "400",
+          message: "No Data Found",
+          response: err,
+        };
+        res.status(400).send(response);
+      } else {
+        if (cache.isCache == false) {
+          connection.flush();
+        }
+        if (userslist.length > 0) {
+          var sql = "update users set fcm_token=? where id=?";
+          connection.query(
+            sql,
+            [fcm_token, userslist[0].id],
+            async function (err, resu, cache) {
+              if (err) {
+                response = {
+                  status: "400",
+                  message: "No Data Found",
+                  response: err,
+                };
+                res.status(400).send(response);
+              } else {
+                if (cache.isCache == false) {
+                  connection.flush();
+                }
 
-        var sql = "update users set fcm_token=? where id=?";
-        connection.query(sql, [fcm_token, userslist[0].id], async function (err, resu, cache) {
-          if (err) {
-            response = {
-              status: '400',
-              message: 'No Data Found',
-              response: err,
+                if (req.body.link == "1") {
+                  response.push({
+                    user_id: userslist[0].id,
+                    phone: userslist[0].phone,
+                    user_name: userslist[0].user_name,
+                    gender: userslist[0].gender,
+                  });
+                  res.send({
+                    status: "200",
+                    type: "1",
+                    response: response,
+                  });
+                } else {
+                  res.send({
+                    status: "400",
+                    message: "Phone Number Already In Use!....",
+                  });
+                }
+              }
             }
-            res.status(400).send(response);
-          } else {
-            if (cache.isCache == false) {
-              connection.flush();
-            }
-
-            if (req.body.link == "1") {
+          );
+        } else {
+          var sql =
+            "INSERT  INTO temp_users(phone,fcm_token,country,country_code) values ?";
+          var VALUES = [[phone, fcm_token, country, country_code]];
+          connection.query(sql, [VALUES], async function (err, result, cache) {
+            if (err) {
+              response = {
+                status: "400",
+                message: "No Data Found",
+                response: err,
+              };
+              res.status(400).send(response);
+            } else {
+              if (cache.isCache == false) {
+                connection.flush();
+              }
               response.push({
-                "user_id": userslist[0].id,
-                "phone": userslist[0].phone,
-                "user_name": userslist[0].user_name,
-                "gender": userslist[0].gender
-              })
+                temp_userId: result.insertId,
+              });
               res.send({
                 status: "200",
-                type: "1",
-                response: response
+                type: "0",
+                response: response,
               });
             }
-            else {
-              res.send({
-                status: "400",
-                message: "Phone Number Already In Use!...."
-              })
-            }
-
-          }
-        });
-
-      } else {
-
-        var sql = "INSERT  INTO temp_users(phone,fcm_token,country,country_code) values ?";
-        var VALUES = [
-          [phone, fcm_token, country, country_code],
-        ];
-        connection.query(sql, [VALUES], async function (err, result, cache) {
-          if (err) {
-            response = {
-              status: '400',
-              message: 'No Data Found',
-              response: err,
-            }
-            res.status(400).send(response);
-          } else {
-            if (cache.isCache == false) {
-              connection.flush();
-            }
-            response.push({
-              temp_userId: result.insertId
-            })
-            res.send({
-              status: "200",
-              type: "0",
-              response: response
-            });
-
-          }
-        });
-
+          });
+        }
       }
     }
-
-  });
-
+  );
 };
 
 const updateUserFamilyDetails = async (req, res, next) => {
@@ -1728,160 +1721,214 @@ const updateUserFamilyDetails = async (req, res, next) => {
   var user_name = req.body.user_name.toString().trim();
   var sql1 =
     "SELECT fp.*,u.phone,u.fcm_token FROM family_profile fp JOIN users u ON u.id=fp.family_owner WHERE fp.id=? AND fp.status='0'";
-  connection.query(
-    sql1,
-    [family_id],
-    async function (err, resultsl, cache) {
-      if (err) {
-        res.send({
-          status: 400,
-          message: "error4",
-          data: [],
-        });
-      } else {
-        if (cache.isCache == false) {
-          connection.flush();
-        }
-        var sql1 =
-          "INSERT INTO users_family_details(user_id,family_id) VALUES ?";
-        var VALUES = [[req.body.user_id, family_id],]
-        connection.query(
-          sql1,
-          [VALUES],
-          async function (err, results, cache) {
-            if (err) {
-              res.send({
-                status: 400,
-                message: "error4",
-                data: [],
-              });
-            }
-            else {
-              await invite_insert_member(
-                req.body.phone,
-                user_name,
-                req.body.gender,
-                family_id,
-                relatives,
-                req.body.node_id,
-                resultsl[0].family_owner,
-                resultsl[0].fcm_token,
-                req.body.user_id
-              );
-              res.send({
-                status: 200,
-                message: "User Registered successfully",
-                data: [],
-                family_status: req.body.link == "1" ? "1" : "0",
-                user_id: req.body.user_id,
-                user_name: user_name
-              });
-            }
-          });
-      }
-    }
-  );
-};
-
-
-const GetAllFamilyProfileDetailsByUserId = async (req, res) => {
-
-  var group_id = req.body.group_id || null;
-  var sql2 =
-    "SELECT  i.id as family_id,i.profile_name,i.family_owner,i.status ,IF(i.family_owner=?,'1','0') as owner_status FROM family_profile AS i WHERE i.id IN( SELECT j.family_id FROM family_details AS j WHERE j.user_id=?) ";
-  connection.query(sql2, [req.body.user_id, req.body.user_id], function (err, result3, cache) {
+  connection.query(sql1, [family_id], async function (err, resultsl, cache) {
     if (err) {
       res.send({
-        message: "error",
         status: 400,
+        message: "error4",
         data: [],
       });
     } else {
       if (cache.isCache == false) {
         connection.flush();
       }
-      var response = [];
-      if (result3.length > 0) {
-        result3.forEach((vals) => {
-          getAllFamilyMembers(vals.family_id, req.body.user_id, group_id).then((members) => {
-
-            response.push({
-              "family_id": vals.family_id,
-              "profile_name": vals.profile_name,
-              "family_owner_Id": vals.family_owner,
-              "status": vals.status,
-              "owner_status": vals.owner_status,
-              "members": members
-
-            })
-            result3.length == response.length && response.sort((a, b) => a.family_id - b.family_id) && res.send({
-              status: "200",
-              message: "Data Found",
-              response: response
-            });
-          })
-
-        })
-      }
-
-      else {
-        res.send({
-          status: "200",
-          message: "No Data Found",
-          response: []
-        });
-      }
+      var sql1 = "INSERT INTO users_family_details(user_id,family_id) VALUES ?";
+      var VALUES = [[req.body.user_id, family_id]];
+      connection.query(sql1, [VALUES], async function (err, results, cache) {
+        if (err) {
+          res.send({
+            status: 400,
+            message: "error4",
+            data: [],
+          });
+        } else {
+          await invite_insert_member(
+            req.body.phone,
+            user_name,
+            req.body.gender,
+            family_id,
+            relatives,
+            req.body.node_id,
+            resultsl[0].family_owner,
+            resultsl[0].fcm_token,
+            req.body.user_id
+          );
+          res.send({
+            status: 200,
+            message: "User Registered successfully",
+            data: [],
+            family_status: req.body.link == "1" ? "1" : "0",
+            user_id: req.body.user_id,
+            user_name: user_name,
+          });
+        }
+      });
     }
   });
+};
 
+const GetAllFamilyProfileDetailsByUserId = async (req, res) => {
+  var group_id = req.body.group_id || null;
+  var sql2 =
+    "SELECT  i.id as family_id,i.profile_name,i.family_owner,i.status ,IF(i.family_owner=?,'1','0') as owner_status FROM family_profile AS i WHERE i.id IN( SELECT j.family_id FROM family_details AS j WHERE j.user_id=?) ";
+  connection.query(
+    sql2,
+    [req.body.user_id, req.body.user_id],
+    function (err, result3, cache) {
+      if (err) {
+        res.send({
+          message: "error",
+          status: 400,
+          data: [],
+        });
+      } else {
+        if (cache.isCache == false) {
+          connection.flush();
+        }
+        var response = [];
+        if (result3.length > 0) {
+          result3.forEach((vals) => {
+            getAllFamilyMembers(
+              vals.family_id,
+              req.body.user_id,
+              group_id
+            ).then((members) => {
+              response.push({
+                family_id: vals.family_id,
+                profile_name: vals.profile_name,
+                family_owner_Id: vals.family_owner,
+                status: vals.status,
+                owner_status: vals.owner_status,
+                members: members,
+              });
+              result3.length == response.length &&
+                response.sort((a, b) => a.family_id - b.family_id) &&
+                res.send({
+                  status: "200",
+                  message: "Data Found",
+                  response: response,
+                });
+            });
+          });
+        } else {
+          res.send({
+            status: "200",
+            message: "No Data Found",
+            response: [],
+          });
+        }
+      }
+    }
+  );
 };
 
 async function getAllFamilyMembers(family_id, user_id, group_id) {
   return new Promise(async function (resolve, reject) {
-    var sql1 = group_id == null ? "SELECT u.id AS user_id,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,IF(u.id=j.family_owner,'1','0') as owner_status  FROM users u JOIN  family_details AS i ON u.id=i.user_id JOIN family_profile j ON j.id=i.family_id WHERE i.family_id=? AND i.user_id!='' AND i.user_id!=?" :
-      "SELECT u.id AS user_id,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,IF(u.id=j.family_owner,'1','0') as owner_status   FROM users u JOIN  family_details AS i ON u.id=i.user_id JOIN family_profile j ON j.id=i.family_id WHERE i.family_id=? AND i.user_id!='' AND i.user_id!=? AND i.user_id NOT IN (SELECT g.user_id FROM group_members g WHERE g.group_id=? and g.status='0') "
+    var sql1 =
+      group_id == null
+        ? "SELECT u.id AS user_id,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,IF(u.id=j.family_owner,'1','0') as owner_status  FROM users u JOIN  family_details AS i ON u.id=i.user_id JOIN family_profile j ON j.id=i.family_id WHERE i.family_id=? AND i.user_id!='' AND i.user_id!=?"
+        : "SELECT u.id AS user_id,u.user_name,CONCAT(?, CASE WHEN u.user_profile != '' THEN  Concat(u.user_profile) end) as profile_image,IF(u.id=j.family_owner,'1','0') as owner_status   FROM users u JOIN  family_details AS i ON u.id=i.user_id JOIN family_profile j ON j.id=i.family_id WHERE i.family_id=? AND i.user_id!='' AND i.user_id!=? AND i.user_id NOT IN (SELECT g.user_id FROM group_members g WHERE g.group_id=? and g.status='0') ";
 
-    connection.query(sql1, [process.env.profile_image_show_path, family_id, user_id, group_id], function (err, ret, cache) {
-
-      if (ret.length > 0) {
-        console.log(ret)
-        ret = ret.map((r) => { r.isChecked = false; return r })
-        resolve(ret)
-      }
-      else {
-        if (cache.isCache == false) {
-          connection.flush();
+    connection.query(
+      sql1,
+      [process.env.profile_image_show_path, family_id, user_id, group_id],
+      function (err, ret, cache) {
+        if (ret.length > 0) {
+          console.log(ret);
+          ret = ret.map((r) => {
+            r.isChecked = false;
+            return r;
+          });
+          resolve(ret);
+        } else {
+          if (cache.isCache == false) {
+            connection.flush();
+          }
+          resolve([]);
         }
-        resolve([])
       }
-    });
+    );
+  });
+}
+
+const getRemovedFamilyMembers = async (req, res, next) => {
+  var remove_ids = req.body.remove_ids;
+
+  getAllFamilyMembers(req.body.family_id, req.body.user_id, null).then(
+    (members) => {
+      members = members.map((r) => {
+        remove_ids.includes(r.user_id)
+          ? (r.isChecked = true)
+          : (r.isChecked = false);
+        return r;
+      });
+      res.send({
+        status: "200",
+        message: "Data Found",
+        response: members,
+      });
+    }
+  );
+};
+
+const getHistory = async (req, res, next) => {
+  var family_id = req.body.family_id || null;
+
+  var sql = "select history from family_profile where id =?";
+  connection.query(sql, [family_id], function (err, result, cache) {
+    if (err) {
+      res.send({
+        status: "400",
+        message: "Error!..",
+        data: [],
+      });
+    } else if (result.length > 0) {
+      if (cache.isCache === false) {
+        connection.flush();
+      }
+      res.send({
+        status: "200",
+        message: "Data found",
+        data: result,
+      });
+    }
+  });
+};
+
+const getallmembersbyfamily = (req,res,next)=>{
+  var sql ="SELECT distinct fd.name,fd.user_id FROM family_details fd WHERE fd.family_id IN (SELECT f.family_id FROM users_family_details f WHERE f.user_id=?) AND fd.user_id IS NOT null and fd.user_id!=?";
+  connection.query(sql, [req.body.user_id,req.body.user_id], function (err, result, cache) {
+    if(err){
+      res.send({
+        status:400,
+        message:"Error!..",
+        data:[]
+      })
+    }else if(result.length>0){
+      if(cache.isCache == false){
+        connection.flush();
+      }
+      res.send({
+        status:200,
+        message:'Data Found!...',
+        data:result
+      })
+    }else{
+      res.send({
+        status:400,
+        data:[],
+        message:'No Data Found !..'
+      })
+    }
 
 
   });
 };
 
-const getRemovedFamilyMembers = async (req, res, next) => {
-  var remove_ids = req.body.remove_ids;
+function check() {
+  var pass = "123@ABC.com";
 
-  getAllFamilyMembers(req.body.family_id, req.body.user_id, null).then((members) => {
-
-    members = members.map((r) => {
-      remove_ids.includes(r.user_id) ? r.isChecked = true : r.isChecked = false; return r;
-    })
-    res.send({
-      status: "200",
-      message: "Data Found",
-      response: members
-    });
-  })
-
-}
-
-
-function check(){
-  var pass="123@ABC.com"
-  
-  console.log(md5(pass))
+  console.log(md5(pass));
 }
 check();
 
@@ -1905,7 +1952,8 @@ module.exports = {
 
   sendOtps,
   updateUserFamilyDetails,
-  getRemovedFamilyMembers, GetAllFamilyProfileDetailsByUserId
-
-
+  getRemovedFamilyMembers,
+  GetAllFamilyProfileDetailsByUserId,
+  getHistory,
+  getallmembersbyfamily
 };

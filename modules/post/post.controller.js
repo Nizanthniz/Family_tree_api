@@ -2,22 +2,37 @@ var storage = require("../commonservies/storage.controller");
 var connection = require("../../config/db");
 const moment = require('moment');
 const postsUpload = async (req, res, next) => {
-  console.log(req.body);
+  console.log(req.files.sampleFile);
+  console.log("public_id",req.body.family_ids);
+  var family_ids = req.body.family_ids.split(',');
+  // public = 0 --> family
+  // public = 1 --> public
+  // public = 2 --> group
+  // public = 3 --> individual
 
   //console.log((req.files.sampleFile).length);
 
   var post_captions = req.body.post_captions;
   var post_description = req.body.post_description;
-  // var tags = req.body.tags;
   var post_id = req.body.post_id;
   var is_update = req.body.is_update;
-  // var schedule_id = req.body.schedule_id;
   var user_id = req.body.user_id;
   var is_public = req.body.is_public;
-  var family_id=[];;
-
-  is_public == 1 ? await getAllFamilyByUserIds(user_id).then((data) => { family_id = data.map((d) => { return d.family_id }) }) : family_id.push(req.body.family_ids);
+  var public_id=[]
+  var family_id=[];
+  var group_id = [];
+  var individual = [];
+  var response=[];
+ 
+  is_public == 1 ? 
+  
+  
+  await getAllFamilyByUserIds(user_id).then((data) => { public_id = data.map((d) => { return d.family_id }) }) 
+  
+  : is_public == 0 ?  family_id=family_ids : is_public == 2 ? group_id=family_ids   : individual=family_ids;
+  console.log("public_id",family_id);
   console.log("-------->", family_id);
+  console.log(req.body.family_ids,"hi");
   console.log(req.files);
   if (is_update == "true") {
     var sql = "update upload_post set delete_flag=1 where post_id=?";
@@ -47,9 +62,17 @@ const postsUpload = async (req, res, next) => {
               if (cache.isCache == false) {
                 connection.flush();
               }
+              individual.push(req.body.user_id)
+
+              var fam_group_array =[];
+
+              family_id.length > 0 ? fam_group_array = family_id : group_id.length > 0 ? fam_group_array = group_id :  public_id.length>0 
+              
+              ? fam_group_array = public_id : fam_group_array = individual
 
 
-              addShowPostDetails(family_id, post_id, true).then((data) => {
+
+              addShowPostDetails(fam_group_array, post_id, true,is_public).then((data) => {
 
                 if (
                   req.files.sampleFile != null ||
@@ -87,7 +110,15 @@ const postsUpload = async (req, res, next) => {
         };
         res.send(response);
       } else {
-          addShowPostDetails(family_id, result.insertId, false).then((data) => {
+        var fam_group_array =[];
+        individual.push(req.body.user_id)
+        console.log(public_id,"publix")
+
+              family_id.length > 0 ? fam_group_array = (family_id) : group_id.length > 0 ? fam_group_array=group_id :  public_id.length>0 
+              
+              ? fam_group_array = public_id : fam_group_array=individual
+              console.log(fam_group_array,"fam_group_array")
+          addShowPostDetails(fam_group_array, result.insertId, false,is_public).then((data) => {
 
             console.log(".............",data)
         if (cache.isCache == false) {
@@ -192,8 +223,8 @@ const getAllPostuserid = (req, res, next) => {
     user_profile_path = process.env.profile_image_show_path;
     post_path = process.env.post_show_path
 
-    var sql = "SELECT p.id AS post_id,p.user_id,p.created_at,p.likes,p.comments,p.post_captions,p.post_description,GROUP_CONCAT(CONCAT(?, CASE WHEN up.post != '' THEN  CONCAT(up.post) END))  AS post,u.user_name, CONCAT(?, CASE WHEN u.user_profile != '' THEN  CONCAT(u.user_profile) end) as user_profile  from post p JOIN upload_post up ON p.id=up.post_id JOIN users u ON p.user_id=u.id WHERE p.id IN(SELECT uf.post_id FROM show_post uf WHERE uf.family_id IN(  SELECT i.family_id FROM users_family_details i WHERE i.user_id=?) AND uf.is_delete='0' group BY uf.post_id)  AND p.delete_flag=0 AND up.delete_flag=0 GROUP BY p.id ORDER BY p.created_at desc";
-    connection.query(sql, [post_path, user_profile_path, user_id], async function (err, result, cache) {
+    var sql = "SELECT p.id AS post_id,p.user_id,p.created_at,p.likes,p.comments,p.post_captions,p.post_description,GROUP_CONCAT(CONCAT(?, CASE WHEN up.post != '' THEN  CONCAT(up.post) END))  AS post,u.user_name, CONCAT(?, CASE WHEN u.user_profile != '' THEN  CONCAT(u.user_profile) end) as user_profile  from post p JOIN upload_post up ON p.id=up.post_id JOIN users u ON p.user_id=u.id WHERE p.id IN(SELECT uf.post_id FROM show_post uf WHERE uf.family_id IN(  SELECT i.family_id FROM users_family_details i WHERE i.user_id=?)  OR  uf.group_id IN (SELECT gm.group_id FROM group_members gm WHERE gm.user_id=? AND gm.`status`='0' ) OR uf.individual_id=? AND uf.is_delete='0' group BY uf.post_id)  AND p.delete_flag=0 AND up.delete_flag=0 GROUP BY p.id ORDER BY p.created_at desc";
+    connection.query(sql, [post_path, user_profile_path,user_id,user_id,user_id], async function (err, result, cache) {
       if (err) {
         response = {
           status: "400",
@@ -744,8 +775,10 @@ async function getAllFamilyByUserIds(user_id) {
   });
 };
 
-async function addShowPostDetails(family_ids, post_id, is_update) {
+async function addShowPostDetails(family_ids, post_id, is_update,is_public) {
   var i = 0;
+  var column_name="";
+   is_public == 1 ? column_name="family_id" : is_public==0 ?column_name="family_id" : is_public == 2 ? column_name="group_id" : column_name = "individual_id"
   if (is_update == true) {
     return new Promise(async function (resolve, reject) {
       var sql = "UPDATE show_post SET is_delete='1' WHERE post_id=?";
@@ -761,7 +794,7 @@ async function addShowPostDetails(family_ids, post_id, is_update) {
         else {
 
          await family_ids.forEach((vals) => {
-            var sql = "INSERT INTO show_post(post_id,family_id) values ?";
+            var sql = "INSERT INTO show_post(post_id,"+column_name+") values ?";
             var VALUES = [[post_id, vals],];
             connection.query(sql, [VALUES], async function (err, result) {
               i++;
@@ -776,8 +809,10 @@ async function addShowPostDetails(family_ids, post_id, is_update) {
   }
   else {
     return new Promise(async function (resolve, reject) {
+      console.log(family_ids,"1")
      await family_ids.forEach((vals) => {
-        var sql = "INSERT INTO show_post(post_id,family_id) values ?";
+      console.log(vals,"2")
+        var sql = "INSERT INTO show_post(post_id,"+column_name+") values ?";
         var VALUES = [[post_id, vals],];
         connection.query(sql, [VALUES], async function (err, result) {
          
@@ -812,6 +847,8 @@ const getAllFamilyByUserId = (req, res, next) => {
 
 
 
+
+
 module.exports = {
   postsUpload,
   updateposts,
@@ -820,6 +857,6 @@ module.exports = {
   deletepostbyid,
   CommentPost, Test,
   getAllPostCommentpostid,
-  getAllFamilyByUserId
+  getAllFamilyByUserId,
 
 };

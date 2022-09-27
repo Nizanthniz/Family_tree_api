@@ -27,4 +27,7 @@ router.post('/getuserdetailsbyid', userController.GetUserDetailsById)
 router.post('/updateuserfamilydetails', userController.updateUserFamilyDetails)
 router.post('/getremovedfamilymembers', userController.getRemovedFamilyMembers)
 router.post('/getallfamilyprofiledetailsbyuserid', userController.GetAllFamilyProfileDetailsByUserId)
+
+router.post('/gethistoryfamilyid',userController.getHistory)
+router.post("/getallmembersbyfamily",userController.getallmembersbyfamily);
 module.exports = router;
